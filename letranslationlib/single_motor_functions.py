@@ -1,7 +1,7 @@
 import legoeducation as le
 import time
 
-class SingleMotorFunction(le.SingleMotor):
+class singleMotor(le.SingleMotor):
     def __init__(self, card_color, card_serial):
         super().__init__()
         self.connect(card_color=card_color, card_serial=card_serial)
@@ -22,7 +22,7 @@ class SingleMotorFunction(le.SingleMotor):
 
 card_color = le.LEGO_COLOR_PURPLE
 card_serial = '1131'   
-sm = SingleMotorFunction(card_color=card_color, card_serial=card_serial)
+sm = singleMotor(card_color=card_color, card_serial=card_serial)
 
 
 
