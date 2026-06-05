@@ -2,10 +2,9 @@ import legoeducation as le
 import time
 
 class singleMotor(le.SingleMotor):
-    def __init__(self, card_color, card_serial):
+    def __init__(self):
         super().__init__()
-        self.connect(card_color=card_color, card_serial=card_serial)
-
+        
     def turn(self, degrees=360):
         self.motor_run_for_degrees(degrees)
 
