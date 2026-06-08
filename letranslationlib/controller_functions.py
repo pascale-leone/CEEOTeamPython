@@ -1,6 +1,7 @@
 import time
 import legoeducation as le
 
+
 class controller(le.Controller):
 
     def left_up(self):
@@ -29,34 +30,7 @@ class controller(le.Controller):
         
     # ── driving helper ──────────────────
 
-    def drive(self, dm):
-        """
-        Use this controller to drive
-        Call this inside a loop to keep controlling continuously.
-
-        Left lever  → steer left
-        Right lever → steer right
-        Both forward  → drive forward
-        Both backward → drive backward
-        Both centered → stop
-
-        Example:
-            for i in range(200):      
-                ctrl.drive(dm)
-                wait(0.5)
-            dm.stop()
-        """
-        if (self.left_up() and self.right_up()):
-            dm.set_speed(max(self.left_position(), self.right_position()))
-            dm.run()
-        elif (self.left_down() and self.right_down()):
-            dm.set_speed(min(self.left_position(), self.right_position()))
-            dm.run()
-        elif self.left_up() or self.right_down():
-            dm.set_speed_left(self.left_position())
-            dm.turn_left(15)
-        elif self.right_up() or self.left_down():
-            dm.set_speed_right(self.right_position())
-            dm.turn_right(15)
-        else:
-            dm.stop()  
+    def drive(self, dm, t=100): 
+        for i in range(t):
+            dm.movement_move_tank(self.left_position(), self.right_position())
+            time.sleep(0.1)
