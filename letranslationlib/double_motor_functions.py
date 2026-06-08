@@ -11,13 +11,13 @@ class doubleMotor(le.DoubleMotor):
         self.movement_move_for_degrees(180*step)
 
     def run(self):
-        self.movement_move()
+        self.movement_move(direction=le.MOVEMENT_MOVE_DIRECTION_BACKWARD)
 
     def run_time(self, time=2000):
         self.movement_move_for_time(time)
 
     
-    def run_left_motor(self):
+    def run_left(self):
         # Rotate the right side of the Double Motor counterclockwise at 50% speed.
         self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_LEFT, speed=50)
 
@@ -61,6 +61,8 @@ class doubleMotor(le.DoubleMotor):
 
     def stop(self):
         self.motor_stop()
+
+#dm = doubleMotor()
 
 # help(le.SingleMotor)
 
