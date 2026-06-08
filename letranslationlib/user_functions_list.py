@@ -1,10 +1,77 @@
 import single_motor_functions
 import double_motor_functions
 import color_sensor_functions
-import controller_functions
+#import controller_functions
+import legoeducation as le
+import time
+
+def wait(seconds: float):
+    """Pause for this many seconds.  wait(2) → wait 2 seconds."""
+    time.sleep(seconds)
+
+cs = color_sensor_functions.colorSensor()
+dm = double_motor_functions.doubleMotor()
+#c = controller_functions.controller()
+sm = single_motor_functions.singleMotor()
+
 
 ""
 "LEGO Education Beginner Python Library"
+
+
+"------------------------"
+"Available Functions:"
+
+"wait(seconds) - pause for this many seconds (time.sleep(seconds))"
+"------------------------"
+"Single Motor Functions"
+
+"sm.connect(card color, serial number) - connect to the motor"
+"sm.spin(degrees) - spin the motor this many degrees"
+"sm.stop() - stop the motor"
+"sm.set_speed(speed) - set the motor speed"
+"sm.run() - run the motor"
+"------------------------"
+"Double Motor Functions"
+
+"dm.connect(card color, serial number) - connect to the motors"
+
+"dm.run() - run the motors"
+"dm.run_time(time) - run the motors for this many milliseconds"
+
+"dm.run_left() - run the left motor"
+"dm.run_right() - run the right motor"
+
+"dm.turn_left(degrees) - turn left by this many degrees"
+"dm.turn_right(degrees) - turn right by this many degrees"
+
+"dm.set_speed(speed) - set the motor speed"
+"dm.set_speed_left(speed) - set the left motor speed"
+"dm.set_speed_right(speed) - set the right motor speed"
+
+"dm.stop() - stop the motors"
+
+"------------------------"
+"Color Sensor Functions"
+
+"cs.connect(card color, serial number) - connect to the color sensor"
+"cs.detect_color() - return the detected color"
+"------------------------"
+"Controller Functions"
+
+"c.connect() - connect to the controller"
+
+"c.left_up() - return True if left stick is up"
+"c.left_down() - return True if left stick is down"
+"c.left_released() - return True if left stick is released"
+
+"c.right_up() - return True if right stick is up"
+"c.right_down() - return True if right stick is down"
+"c.right_released() - return True if right stick is released"
+
+"c.left_position() - return 'UP', 'DOWN', or 'RELEASED' for left stick"
+"c.right_position() - return 'UP', 'DOWN', or 'RELEASED'"
+
 "------------------------"
 "if statements - use these to make decisions in your code"
 
@@ -25,34 +92,29 @@ import controller_functions
 "while cs.detect_color() != 'red':"
 "    sm.spin()"
 
-"------------------------"
-"Available Functions:"
+"-----------------------------------------------------------------------------------------------------------"
 
-"wait(seconds) - pause for this many seconds (time.sleep(seconds))"
-"------------------------"
-"Single Motor Functions"
+"MY CODE GOES HERE!" 
 
-"sm.connect(card color, serial number) - connect to the motor"
-"sm.spin(degrees) - spin the motor this many degrees"
-"sm.stop() - stop the motor"
-"sm.set_speed(speed) - set the motor speed"
-"sm.run() - run the motor"
-"------------------------"
-"Double Motor Functions"
+"-----------------------------------------------------------------------------------------------------------"
 
-"dm.connect(card color, serial number) - connect to the motors"
-"dm.spin(degrees) - spin the motors this many degrees"
-"dm.stop() - stop the motors"
-"dm.set_speed(speed) - set the motor speed"
-"dm.run() - run the motors"
-"------------------------"
-"Color Sensor Functions"
+orange = le.LEGO_COLOR_ORANGE
+purple = le.LEGO_COLOR_PURPLE
+blue = le.LEGO_COLOR_BLUE
+magenta = le.LEGO_COLOR_MAGENTA
+green = le.LEGO_COLOR_GREEN
 
-"cs.connect(card color, serial number) - connect to the color sensor"
-"cs.detect_color() - return the detected color"
-"------------------------"
-"Controller Functions"
 
-"controller.connect() - connect to the controller"
-"------------------------"
+dm.connect('orange', '1126')
+sm.connect('orange', '1126')
+
+for i in range(5):
+    dm.run_time(1000)
+    wait(1)
+    sm.spin()
+    wait(1)
+print('Done!')
+
+dm.disconnect()
+sm.disconnect()
 
