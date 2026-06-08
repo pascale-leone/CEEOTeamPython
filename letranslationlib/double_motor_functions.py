@@ -10,16 +10,19 @@ class doubleMotor(le.DoubleMotor):
         '''
         self.movement_move_for_degrees(180*step)
 
+    def run(self):
+        self.movement_move()
+
     def run_time(self, time=2000):
         self.movement_move_for_time(time)
 
     
-    def run_left_motor(self, rotations=1):
+    def run_left_motor(self):
         # Rotate the right side of the Double Motor counterclockwise at 50% speed.
         self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_LEFT, speed=50)
 
     def run_right(self):
-        pass
+        self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_RIGHT, speed=50)
 
     
 
@@ -39,38 +42,36 @@ class doubleMotor(le.DoubleMotor):
         '''
         Set speed of both motors for individual rotation and movement.
         '''
-        dm.motor_set_speed(speed, motor=le.MOTOR_LEFT)   
-        dm.motor_set_speed(speed, motor=le.MOTOR_RIGHT)   
-        dm.movement_set_speed(speed)
+        self.motor_set_speed(speed, motor=le.MOTOR_LEFT)   
+        self.motor_set_speed(speed, motor=le.MOTOR_RIGHT)   
+        self.movement_set_speed(speed)
 
     def set_speed_left(self, speed):
         '''
         Set speed of left motor for individual rotation.
         '''
-        dm.motor_set_speed(speed, motor=le.MOTOR_LEFT)   
+        self.motor_set_speed(speed, motor=le.MOTOR_LEFT)   
 
     def set_speed_right(self, speed):
         '''
         Set speed of right motor for individual rotation.
         '''
-        dm.motor_set_speed(speed, motor=le.MOTOR_RIGHT)   
-    
-
+        self.motor_set_speed(speed, motor=le.MOTOR_RIGHT)   
 
 
     def stop(self):
         self.motor_stop()
 
 # help(le.SingleMotor)
-help(le.Controller)
+
 #help(type(le.DoubleMotor))
-card_color = le.LEGO_COLOR_BLUE
-card_serial = '1131'
-dm = doubleMotor()
-dm.connect(card_color=card_color, card_serial=card_serial)
-if not dm.connected:
-	print('Error connecting to Double Motor.')
-	exit(1) # error connecting
+# card_color = le.LEGO_COLOR_BLUE
+# card_serial = '1131'
+# dm = doubleMotor()
+# dm.connect(card_color=card_color, card_serial=card_serial)
+# if not dm.connected:
+# 	print('Error connecting to Double Motor.')
+# 	exit(1) # error connecting
 
 # dm.motor_set_speed(10, motor=le.MOTOR_RIGHT)   
 # dm.movement_set_speed(100)
@@ -83,5 +84,3 @@ if not dm.connected:
 
 #dm.move_steps(10)
     
-dm.turn_left(360)
-dm.turn_right()
