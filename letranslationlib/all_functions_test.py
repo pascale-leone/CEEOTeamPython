@@ -1,6 +1,10 @@
 import legoeducation as le
 import time
 
+def wait(seconds: float):
+    """Pause for this many seconds.  wait(2) → wait 2 seconds."""
+    time.sleep(seconds)
+
 class singleMotor(le.SingleMotor):
     def __init__(self):
         super().__init__()

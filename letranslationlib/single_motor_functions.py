@@ -5,7 +5,7 @@ class singleMotor(le.SingleMotor):
     def __init__(self):
         super().__init__()
         
-    def turn(self, degrees=360):
+    def spin(self, degrees=360):
         self.motor_run_for_degrees(degrees)
 
     #uses degrees - alternative?
