@@ -6,7 +6,7 @@ MY_CARD = "1128"
 robot = Robot(MY_CARD, speed=100)
 controller = Controller(MY_CARD)
 
-for i in range(200):
+for i in range(500):
     controller.drive_robot(robot)
     wait(0.1)
 robot.stop()
