@@ -46,29 +46,17 @@ class controller(le.Controller):
                 wait(0.5)
             dm.stop()
         """
-        if (self.left_up() and self.right_up()) or (self.left_down() and self.right_down()):
+        if (self.left_up() and self.right_up()):
             dm.set_speed(max(self.left_position(), self.right_position()))
+            dm.run()
+        elif (self.left_down() and self.right_down()):
+            dm.set_speed(min(self.left_position(), self.right_position()))
             dm.run()
         elif self.left_up() or self.right_down():
             dm.set_speed_left(self.left_position())
-            dm.turn_left()
+            dm.turn_left(15)
         elif self.right_up() or self.left_down():
             dm.set_speed_right(self.right_position())
-            dm.turn_right()
+            dm.turn_right(15)
         else:
-            dm.stop()
-    
-if __name__ == '__main__':
-    card_color = le.LEGO_COLOR_MAGENTA
-    card_serial = '1128'
-    c = controller()
-    c.connect(card_color=card_color, card_serial=card_serial)
-
-    for _ in range(100):
-        print(f'left up: {c.left_up()}')
-        print(f'left down: {c.left_down()}')
-        print(f'left released: {c.left_released()}')
-        print(f'right up: {c.right_up()}')
-        print(f'right down: {c.right_down()}')
-        print(f'right released: {c.right_released()}\n')
-        time.sleep(1)
+            dm.stop()  
