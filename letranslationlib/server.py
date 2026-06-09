@@ -21,34 +21,43 @@ def wait(seconds):
     time.sleep(seconds)
 
 # everything the user can reference in their typed code
-NAMESPACE = {
-    "colorSensor": color_sensor_functions.colorSensor,
-    "doubleMotor": double_motor_functions.doubleMotor,
-    "singleMotor": single_motor_functions.singleMotor,
-    "controller": controller_functions.controller,
-    "wait": wait,
-    "le": le,
-    "orange": le.LEGO_COLOR_ORANGE,
-    "purple": le.LEGO_COLOR_PURPLE,
-    "blue": le.LEGO_COLOR_BLUE,
-    "magenta": le.LEGO_COLOR_MAGENTA,
-    "green": le.LEGO_COLOR_GREEN,
-    "time": time,
-}
+
 
 @app.route("/exec", methods=["POST"])
 def run_code():
     code = request.json["code"]
     buffer = io.StringIO()
     sys.stdout = buffer
+
+    fresh_namespace = {
+        "colorSensor": color_sensor_functions.colorSensor,
+        "doubleMotor": double_motor_functions.doubleMotor,
+        "singleMotor": single_motor_functions.singleMotor,
+        "controller": controller_functions.controller,
+        "wait": wait,
+        "le": le,
+        "orange": le.LEGO_COLOR_ORANGE,
+        "purple": le.LEGO_COLOR_PURPLE,
+        "blue": le.LEGO_COLOR_BLUE,
+        "magenta": le.LEGO_COLOR_MAGENTA,
+        "green": le.LEGO_COLOR_GREEN,
+        "time": time,
+    }
+
     try:
-        exec(code, NAMESPACE)
+        exec(code, fresh_namespace)
         output = buffer.getvalue()
         return jsonify({"status": "ok", "output": output or "Done"})
     except Exception as e:
         return jsonify({"status": "error", "output": str(e)})
     finally:
         sys.stdout = sys.__stdout__
+        for val in fresh_namespace.values():
+            if hasattr(val, 'disconnect'):
+                try:
+                    val.disconnect()
+                except:
+                    pass
 
 if __name__ == "__main__":
     app.run(port=5001)

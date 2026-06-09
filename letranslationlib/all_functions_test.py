@@ -45,26 +45,27 @@ class colorSensor(le.ColorSensor):
         }
         #detect the color, return the detected color
         return color_mapping.get(color_number, 'Unknown')
-    
 
-sm = singleMotor()
-cs = colorSensor()
+help(le.DoubleMotor())   
 
-card_color = le.LEGO_COLOR_PURPLE
-card_serial = '1131'
+# sm = singleMotor()
+# cs = colorSensor()
 
-sm.connect(card_color=card_color, card_serial=card_serial)
-if not sm.connected:
-    print('Error connecting to Single Motor.')
-    exit(1) # error connecting
+# card_color = le.LEGO_COLOR_PURPLE
+# card_serial = '1131'
 
-cs.connect(card_color=card_color, card_serial=card_serial)
-if not cs.connected:
-    print('Error connecting to Color Sensor.')
-    exit(1) # error connecting
+# sm.connect(card_color=card_color, card_serial=card_serial)
+# if not sm.connected:
+#     print('Error connecting to Single Motor.')
+#     exit(1) # error connecting
 
-time.sleep(2)
+# cs.connect(card_color=card_color, card_serial=card_serial)
+# if not cs.connected:
+#     print('Error connecting to Color Sensor.')
+#     exit(1) # error connecting
 
-cs.disconnect()
-sm.disconnect()
-exit(0)
+# time.sleep(2)
+
+# cs.disconnect()
+# sm.disconnect()
+# exit(0)

@@ -18,7 +18,7 @@
       background: #1e1f29;
       font-family: monospace;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       height: 100vh;
       padding: 20px;
       box-sizing: border-box;
@@ -52,8 +52,47 @@
       letter-spacing: 0.05em;
     }
 
-    #functions{
+    .tab-menu {
+        display: flex;
+        flex-direction: column;
+        background: #282a36;
+        padding: 20px 0;
+        min-width: 180px;
+        gap: 4px;
+    }
+
+    .tab-button {
+        font-family: monospace;
+        color: #f8f8f2;
+        background: none;
+        border: none;
+        padding: 10px 20px;
+        text-align: left;
+        cursor: pointer;
+        font-size: 13px;
+        border-left: 3px solid transparent;
+     }
+
+    .tab-button:hover {
+        background: #44475a;
+    }
+    .tab-button.active {
+        border-left: 3px solid #50fa7b;
+        color: #50fa7b;
+        background: #44475a;
+    }
+
+    .tabcontent{
+        font-family: monospace;
         color: white;
+    }
+    .tab-content-area {
+        flex: 1;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow-y: auto;
     }
 
     #run:hover { background: #69ff94; }
@@ -77,18 +116,48 @@
 
   <h2>Easy Lego</h2>
   <div class="tab-menu">
-    <button class="tab-button active" onclick="switchTab(event, 'tab1')">Code</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab1')">Single Motor Functions</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab2')">Double Motor Functions</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab3')">Controller Functions</button>
+    <button class="tab-button active" onclick="switchTab(event, 'tab1')" id="defaultOpen">Code</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab2')">Single Motor Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab3')">Double Motor Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab4')">Controller Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab5')">Color Sensor Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab6')">General Python tips!</button>
+    </div>
+    <!-- Tab content -->
+    <div class="tab-content-area">
+    <div id="tab1" class="tabcontent">
+        <textarea id="code"></textarea>
+
+        <button id="run">▶ Run</button>
+        <div id="output">Output will appear here...</div>
+    </div>
+    
+    <div id="tab2" class="tabcontent">
+        <h3>Single Motor Functions</h3>
+        <p>Paris is the capital of France.</p>
+    </div>
+    
+    <div id="tab3" class="tabcontent">
+        <h3>Double Motor Functions</h3>
+        <p>Tokyo is the capital of Japan.</p>
+    </div>
+    <div id="tab4" class="tabcontent">
+        <h3>Controller Functions</h3>
+        <p>Tokyo is the capital of Japan.</p>
+    </div>
+    <div id="tab5" class="tabcontent">
+        <h3>Color Sensor Function</h3>
+        <p>Tokyo is the capital of Japan.</p>
+    </div>
+    <div id="tab6" class="tabcontent">
+        <h3>General Python tips!</h3>
+        <p>Tokyo is the capital of Japan.</p>
+    </div>
 </div>
 
-  <textarea id="code"></textarea>
-
-  <button id="run">▶ Run</button>
-  <div id="output">Output will appear here...</div>
 
   <script>
+    document.getElementById("defaultOpen").click();
     const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
       mode: "python",
       theme: "dracula",
@@ -121,6 +190,16 @@
         output.className = "error";
       }
     });
+
+    function switchTab(event, tabname) {
+        var i, tabcontent, tabbutton;
+
+        tabcontent = document.getElementsByClassName("tabcontent");
+        document.querySelectorAll(".tabcontent").forEach(t => t.style.display = "none");
+        document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+        document.getElementById(tabname).style.display = "block";
+        event.currentTarget.classList.add("active");
+    }
   </script>
 </body>
 </html>
