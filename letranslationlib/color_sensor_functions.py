@@ -23,21 +23,21 @@ class colorSensor(le.ColorSensor):
         #detect the color, return the detected color
         return color_mapping.get(color_number, 'Unknown')
     
-card_color = le.LEGO_COLOR_PURPLE
-card_serial = '1131'
+# card_color = le.LEGO_COLOR_PURPLE
+# card_serial = '1131'
 
-cs = colorSensor()
+# cs = colorSensor()
 
-cs.connect(card_color=card_color, card_serial=card_serial)
-if not cs.connected:
-    print('Error connecting to Color Sensor.')
-    exit(1) # error connecting
+# cs.connect(card_color=card_color, card_serial=card_serial)
+# if not cs.connected:
+#     print('Error connecting to Color Sensor.')
+#     exit(1) # error connecting
 
-time.sleep(5)
-for i in range(21):
-    color = cs.detect_color()
-    print(f'Detected color: {color}')
-    time.sleep(5)
+# time.sleep(5)
+# for i in range(21):
+#     color = cs.detect_color()
+#     print(f'Detected color: {color}')
+#     time.sleep(5)
 
-cs.disconnect()
-exit(0)
+# cs.disconnect()
+# exit(0)

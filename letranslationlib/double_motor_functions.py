@@ -61,26 +61,3 @@ class doubleMotor(le.DoubleMotor):
 
     def stop(self):
         self.motor_stop()
-
-# help(le.SingleMotor)
-
-#help(type(le.DoubleMotor))
-# card_color = le.LEGO_COLOR_BLUE
-# card_serial = '1131'
-# dm = doubleMotor()
-# dm.connect(card_color=card_color, card_serial=card_serial)
-# if not dm.connected:
-# 	print('Error connecting to Double Motor.')
-# 	exit(1) # error connecting
-
-# dm.motor_set_speed(10, motor=le.MOTOR_RIGHT)   
-# dm.movement_set_speed(100)
-# dm.motor_run_for_degrees(360, motor=le.MOTOR_RIGHT)
-# dm.move_steps(10)
-# #dm.motor_set_speed(100, motor=le.MOTOR_RIGHT)
-# dm.movement_set_speed(-100)
-# time.sleep(.5)
-# dm.motor_run_for_degrees(360, motor=le.MOTOR_RIGHT)
-
-#dm.move_steps(10)
-    

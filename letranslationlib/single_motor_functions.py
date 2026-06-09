@@ -19,9 +19,9 @@ class singleMotor(le.SingleMotor):
     def run(self):
         self.motor_run() 
 
-card_color = le.LEGO_COLOR_PURPLE
-card_serial = '1131'   
-sm = singleMotor(card_color=card_color, card_serial=card_serial)
+# card_color = le.LEGO_COLOR_PURPLE
+# card_serial = '1131'   
+# sm = singleMotor(card_color=card_color, card_serial=card_serial)
 
 
 

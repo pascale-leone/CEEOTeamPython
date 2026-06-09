@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Easy Lego</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+  <!-- CodeMirror -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background: #1e1f29;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+      gap: 12px;
+    }
+
+    h2 {
+      color: #f8f8f2;
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .CodeMirror {
+      height: 300px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    #run {
+      align-self: flex-start;
+      background: #50fa7b;
+      color: #1e1f29;
+      border: none;
+      padding: 8px 24px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+    }
+
+    #functions{
+        color: white;
+    }
+
+    #run:hover { background: #69ff94; }
+
+    #output {
+      background: #282a36;
+      color: #f8f8f2;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 13px;
+      min-height: 40px;
+      white-space: pre-wrap;
+      border-left: 3px solid #6272a4;
+    }
+
+    #output.error { border-left-color: #ff5555; color: #ff5555; }
+    #output.success { border-left-color: #50fa7b; }
+  </style>
+</head>
+<body>
+
+  <h2>Easy Lego</h2>
+  <div class="tab-menu">
+    <button class="tab-button active" onclick="switchTab(event, 'tab1')">Code</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab1')">Single Motor Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab2')">Double Motor Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab3')">Controller Functions</button>
+</div>
+
+  <textarea id="code"></textarea>
+
+  <button id="run">▶ Run</button>
+  <div id="output">Output will appear here...</div>
+
+  <script>
+    const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+      mode: "python",
+      theme: "dracula",
+      lineNumbers: true,
+      indentUnit: 4,
+      tabSize: 4,
+      indentWithTabs: false,
+      extraKeys: {
+        "Tab": cm => cm.execCommand("indentMore"),
+        "Shift-Tab": cm => cm.execCommand("indentLess")
+      }
+    });
+
+    document.getElementById("run").addEventListener("click", async () => {
+      const code = editor.getValue();
+      const output = document.getElementById("output");
+      output.className = "";
+      output.textContent = "Running...";
+      try {
+        const res = await fetch("http://localhost:5001/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        output.textContent = data.output;
+        output.className = data.status === "error" ? "error" : "success";
+      } catch (e) {
+        output.textContent = "Could not reach server — is server.py running?";
+        output.className = "error";
+      }
+    });
+  </script>
+</body>
+</html>
