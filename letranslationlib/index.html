@@ -27,6 +27,7 @@
 
     h2 {
       color: #f8f8f2;
+      font-family: verdana;
       margin: 0;
       font-size: 1.1rem;
       letter-spacing: 0.05em;
@@ -36,6 +37,7 @@
       height: 300px;
       border-radius: 6px;
       font-size: 14px;
+      font-family:monospace;
       line-height: 1.6;
     }
 
@@ -62,8 +64,8 @@
     }
 
     .tab-button {
-        font-family: monospace;
         color: #f8f8f2;
+        font-family: verdana;
         background: none;
         border: none;
         padding: 10px 20px;
@@ -83,8 +85,8 @@
     }
 
     .tabcontent{
-        font-family: monospace;
         color: white;
+        font-family: verdana;
     }
     .tab-content-area {
         flex: 1;
@@ -93,6 +95,8 @@
         flex-direction: column;
         gap: 12px;
         overflow-y: auto;
+        font-family: verdana;
+
     }
 
     #run:hover { background: #69ff94; }
@@ -104,8 +108,25 @@
       padding: 12px 16px;
       font-size: 13px;
       min-height: 40px;
+      font-family: monospace;
       white-space: pre-wrap;
       border-left: 3px solid #6272a4;
+    }
+
+    pre {
+        background-color: #f4f4f4;
+        border: 1px solid #ddd;
+        color: #333;
+        page-break-inside: avoid;
+        font-family: monospace;
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 1.6em;
+        max-width: 100%;
+        overflow: auto;
+        padding: 1em 1em;
+        display: block;
+        word-wrap: break-word;
     }
 
     #output.error { border-left-color: #ff5555; color: #ff5555; }
@@ -134,24 +155,74 @@
     
     <div id="tab2" class="tabcontent">
         <h3>Single Motor Functions</h3>
-        <p>Paris is the capital of France.</p>
+        <p>connect to the motor<pre><code>sm.connect(card_color=color, card_serial='1234')</code></pre></p>
+        <p>spin the motor this many degrees<pre><code>sm.spin(degrees)</code></pre></p>
+        <p>stop the motor<pre><code>sm.stop()</code></pre></p>
+        <p>set the motor speed<pre><code>sm.set_speed(speed)</code></pre></p>
+        <p>run the motor<pre><code>sm.run()</code></pre></p>
+           
     </div>
     
     <div id="tab3" class="tabcontent">
         <h3>Double Motor Functions</h3>
-        <p>Tokyo is the capital of Japan.</p>
+        <p>connect to the motors <pre><code>dm.connect(card_color=color, card_serial='1234')</code></pre></p>
+        <p>move this many steps!<pre><code>dm.move_steps(1)</code></pre></p>
+        <p>run the motors <pre><code>dm.run()</code></pre></p>
+        <p>run the motors for this many milliseconds <pre><code>dm.run_time(time)</code></pre></p>
+        <p>run the left motor<pre><code>dm.run_left()</code></pre></p>
+        <p>run the right motor<pre><code>dm.run_right()</code></pre></p>
+        <p>turn left by this many degrees<pre><code>dm.turn_left(degrees)</code></pre></p>
+        <p>turn right by this many degrees<pre><code>dm.turn_right(degrees)</code></pre></p>
+        <p>set the motor speed <pre><code>dm.set_speed(speed)</code></pre></p>
+        <p>set the left motor speed <pre><code>dm.set_speed_left(speed)</code></pre></p>
+        <p>set the right motor speed<pre><code>dm.set_speed_right(speed)</code></pre></p>
+        <p>stop the motors<pre><code>dm.stop()</code></pre></p>
     </div>
     <div id="tab4" class="tabcontent">
         <h3>Controller Functions</h3>
-        <p>Tokyo is the capital of Japan.</p>
+        <p>connect to the controller<pre><code>c.connect()</code></pre></p>
+        <p>control the double motor for 10 seconds using the controller sticks<pre><code>c.drive(dm)</code></pre></p>
+        <p>return True if left stick is up<pre><code>c.left_up()</code></pre></p>
+        <p>return True if left stick is down<pre><code>c.left_down()</code></pre></p>
+        <p>return True if left stick is released<pre><code>c.left_released()</code></pre></p>
+        <p>return True if right stick is up<pre><code>c.right_up()</code></pre></p>
+        <p>return True if right stick is down<pre><code>c.right_down()</code></pre></p>
+        <p>return True if right stick is released<pre><code>c.right_released()</code></pre></p>
     </div>
     <div id="tab5" class="tabcontent">
         <h3>Color Sensor Function</h3>
-        <p>Tokyo is the capital of Japan.</p>
+        <p>connect to the color sensor<pre><code>cs.connect(card color, serial number)</code></pre></p>
+        <p>return the detected color<pre><code>cs.detect_color()</code></pre></p>
     </div>
     <div id="tab6" class="tabcontent">
         <h3>General Python tips!</h3>
-        <p>Tokyo is the capital of Japan.</p>
+        <p>if statements - use these to make decisions in your code<br>
+
+            Example: Green means go!<br>
+            <pre><code>
+            if cs.detect_color() == 'green':
+                print('The color is green!')
+                dm.run()
+            </code></pre>
+            
+            
+            <br>
+            for loops - use these to repeat code a certain number of times<br>
+        
+            Example: Spin 5 times!<br>
+            <pre><code>
+            for i in range(5):
+                sm.spin()
+            </code></pre>
+            
+            <br>
+            while loops - use these to repeat code until a condition is met <br>
+            Example: Spin until we see red!<br>
+            <pre><code>
+            while cs.detect_color() != 'red':
+                sm.spin()
+            </code></pre>
+            </p>
     </div>
 </div>
 
