@@ -5,10 +5,8 @@ class singleMotor(le.SingleMotor):
     def __init__(self):
         super().__init__()
         
-    def spin(self, degrees=360):
-        self.motor_run_for_degrees(degrees)
-
-    #uses degrees - alternative?
+    def spin(self, rotations=1):
+        self.motor_run_for_degrees(rotations * 360)
 
     def stop(self):
         self.motor_stop()
@@ -18,14 +16,3 @@ class singleMotor(le.SingleMotor):
 
     def run(self):
         self.motor_run() 
-
-# card_color = le.LEGO_COLOR_PURPLE
-# card_serial = '1131'   
-# sm = singleMotor(card_color=card_color, card_serial=card_serial)
-
-
-
-
-
-
-

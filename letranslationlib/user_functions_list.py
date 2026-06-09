@@ -1,28 +1,47 @@
+import legoeducation as le
 import single_motor_functions
 import double_motor_functions
 import color_sensor_functions
-#import controller_functions
-import legoeducation as le
+import controller_functions
 import time
 
 def wait(seconds: float):
-    """Pause for this many seconds.  wait(2) → wait 2 seconds."""
     time.sleep(seconds)
+
+
+azure =   "LEGO_COLOR_AZURE"
+blue =   "LEGO_COLOR_BLUE"
+cyan =   "LEGO_COLOR_CYAN"
+green =   "LEGO_COLOR_GREEN"
+red =     "LEGO_COLOR_RED"
+yellow =  "LEGO_COLOR_YELLOW"
+white =   "LEGO_COLOR_WHITE"
+black =   "LEGO_COLOR_BLACK"
+orange =  "LEGO_COLOR_ORANGE"
+purple =  "LEGO_COLOR_PURPLE"
+magenta = "LEGO_COLOR_MAGENTA"
+
 
 cs = color_sensor_functions.colorSensor()
 dm = double_motor_functions.doubleMotor()
-#c = controller_functions.controller()
+c = controller_functions.controller()
 sm = single_motor_functions.singleMotor()
 
 
 ""
 "LEGO Education Beginner Python Library"
+"--------------------------------------------------------"
+"Connecting to the devices:"
 
+"device.connect(color, number)"
+"please enter the color in lowercase and the serial number as a string"
+"example: dm.connect(orange, '1234')"
 
 "------------------------"
 "Available Functions:"
 
 "wait(seconds) - pause for this many seconds (time.sleep(seconds))"
+
 "------------------------"
 "Single Motor Functions"
 
@@ -56,10 +75,13 @@ sm = single_motor_functions.singleMotor()
 
 "cs.connect(card color, serial number) - connect to the color sensor"
 "cs.detect_color() - return the detected color"
+"   note: the color will be returned as a string, such as 'red' or 'blue'"
+
 "------------------------"
 "Controller Functions"
 
 "c.connect() - connect to the controller"
+"c.drive(dm) - control the double motor for 10 seconds using the controller sticks"
 
 "c.left_up() - return True if left stick is up"
 "c.left_down() - return True if left stick is down"
@@ -97,24 +119,4 @@ sm = single_motor_functions.singleMotor()
 "MY CODE GOES HERE!" 
 
 "-----------------------------------------------------------------------------------------------------------"
-
-orange = le.LEGO_COLOR_ORANGE
-purple = le.LEGO_COLOR_PURPLE
-blue = le.LEGO_COLOR_BLUE
-magenta = le.LEGO_COLOR_MAGENTA
-green = le.LEGO_COLOR_GREEN
-
-
-dm.connect('orange', '1126')
-sm.connect('orange', '1126')
-
-for i in range(5):
-    dm.run_time(1000)
-    wait(1)
-    sm.spin()
-    wait(1)
-print('Done!')
-
-dm.disconnect()
-sm.disconnect()
 
