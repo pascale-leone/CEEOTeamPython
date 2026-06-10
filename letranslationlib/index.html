@@ -29,7 +29,6 @@
       color: #f8f8f2;
       font-family: verdana;
       margin: 0;
-      font-size: 1.1rem;
       letter-spacing: 0.05em;
     }
 
@@ -53,6 +52,19 @@
       cursor: pointer;
       letter-spacing: 0.05em;
     }
+
+    /* #stop {
+      align-self: flex-start;
+      background: #f11717;
+      color: #1e1f29;
+      border: none;
+      padding: 8px 24px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+    } */
 
     .tab-menu {
         display: flex;
@@ -101,6 +113,8 @@
 
     #run:hover { background: #69ff94; }
 
+    /* #stop:hover { background: #ff8069; } */
+
     #output {
       background: #282a36;
       color: #f8f8f2;
@@ -129,13 +143,37 @@
         word-wrap: break-word;
     }
 
+    .tbl {
+        background-color: #f4f4f4;
+        border: 1px solid #ddd;
+        color: #333;
+        page-break-inside: avoid;
+        font-family: monospace;
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 0.5em;
+        margin-left: 0.5em;
+        text-align: left;
+        max-width: 100%;
+        overflow: auto;
+        padding: 0.5em 0.5em;
+        display: block;
+        word-wrap: break-word;
+    }
+    /* Target each letter sequentially and apply colors */
+    .multicolor-word span:nth-child(7n+1) { color: #ff0000; } /* Red */
+    .multicolor-word span:nth-child(7n+2) { color: #ff7f00; } /* Orange */
+    .multicolor-word span:nth-child(7n+3) { color: #ffff00; } /* Yellow */
+    .multicolor-word span:nth-child(7n+4) { color: #00ff00; } /* Green */
+    .multicolor-word span:nth-child(7n+5) { color: #87CEFA; } /* Blue */
+
+
     #output.error { border-left-color: #ff5555; color: #ff5555; }
     #output.success { border-left-color: #50fa7b; }
   </style>
 </head>
 <body>
 
-  <h2>Easy Lego</h2>
   <div class="tab-menu">
     <button class="tab-button active" onclick="switchTab(event, 'tab1')" id="defaultOpen">Code</button>
     <button class="tab-button" onclick="switchTab(event, 'tab2')">Single Motor Functions</button>
@@ -147,10 +185,64 @@
     <!-- Tab content -->
     <div class="tab-content-area">
     <div id="tab1" class="tabcontent">
+        <h2>Welcome to Python Lego Robotics!</h2>
         <textarea id="code"></textarea>
 
         <button id="run">▶ Run</button>
+        <!-- <button id="stop">⬣ Stop</button> -->
         <div id="output">Output will appear here...</div>
+        <h3>Getting started...</h3>
+        <p>Make sure to use the <span class="multicolor-word">
+          <span>c</span><span>o</span><span>l</span><span>o</span><span>r</span>
+         and <em>number</em> on your card!</p>
+        <table>
+          <tr>
+            <th>What are you using?</th>
+            <th>code</th>
+          </tr>
+          <tr>
+            <th>Single Motor</th>
+            <th><pre class="tbl">
+              <code>
+sm = singleMotor()
+sm.connect(card_color=orange, card_serial="1234")
+            </code></pre></th>
+          </tr>
+          <tr>
+            <th>Double Motor</th>
+            <th><pre class="tbl">
+              <code>
+dm = doubleMotor()
+dm.connect(card_color=orange, card_serial="1234")
+            </code></pre></th>
+          </tr>
+          <tr>
+            <th>Controller</th>
+            <th><pre class="tbl">
+              <code>
+c = controller()
+c.connect(card_color=orange, card_serial="1234")
+            </code></pre></th>
+          </tr>
+          <tr>
+            <th>Color Sensor</th>
+            <th><pre class="tbl">
+              <code>
+cs = colorSensor()
+cs.connect(card_color=orange, card_serial="1234")
+            </code></pre></th>
+          </tr>
+        </table>
+        <h3>Try driving!</h3>
+        <pre><code>
+dm = doubleMotor()
+dm.connect(card_color=orange, card_serial="1234")
+
+c = controller()
+c.connect(card_color=orange, card_serial="1234")
+
+c.drive(dm)
+        </code></pre>
     </div>
     
     <div id="tab2" class="tabcontent">
@@ -200,9 +292,9 @@
 
             Example: Green means go!<br>
             <pre><code>
-            if cs.detect_color() == 'green':
-                print('The color is green!')
-                dm.run()
+if cs.detect_color() == 'green':
+    print('The color is green!')
+    dm.run()
             </code></pre>
             
             
@@ -211,16 +303,16 @@
         
             Example: Spin 5 times!<br>
             <pre><code>
-            for i in range(5):
-                sm.spin()
+for i in range(5):
+    sm.spin()
             </code></pre>
             
             <br>
             while loops - use these to repeat code until a condition is met <br>
             Example: Spin until we see red!<br>
             <pre><code>
-            while cs.detect_color() != 'red':
-                sm.spin()
+while cs.detect_color() != 'red':
+    sm.spin()
             </code></pre>
             </p>
     </div>
@@ -261,6 +353,23 @@
         output.className = "error";
       }
     });
+
+    // document.getElementById("stop").addEventListener("click", async () => {
+    //   const output = document.getElementById("output");
+    //   try {
+    //     const res = await fetch("http://localhost:5001/stop", {
+    //       method: "POST",
+    //       headers: { "Content-Type": "text/plain" },  // ← avoids preflight
+    //       // headers: { "Content-Type": "application/json" },
+    //     });
+    //     const data = await res.json();
+    //     output.textContent = data.output;
+    //     output.className = "";
+    //   } catch (e) {
+    //     output.textContent = "Could not reach server — is server.py running?";
+    //     output.className = "error";
+    //   }
+    // });
 
     function switchTab(event, tabname) {
         var i, tabcontent, tabbutton;
