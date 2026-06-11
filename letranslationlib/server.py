@@ -41,6 +41,13 @@ def run_code():
         "blue": le.LEGO_COLOR_BLUE,
         "magenta": le.LEGO_COLOR_MAGENTA,
         "green": le.LEGO_COLOR_GREEN,
+        "azure" :   le.LEGO_COLOR_AZURE,
+        "teal" :   le.LEGO_COLOR_TEAL,
+        "green" :  le.LEGO_COLOR_GREEN,
+        "red" :     le.LEGO_COLOR_RED,
+        "yellow" :  le.LEGO_COLOR_YELLOW,
+        "white" :   le.LEGO_COLOR_WHITE,
+        "magenta" : le.LEGO_COLOR_MAGENTA,
         "time": time,
     }
 

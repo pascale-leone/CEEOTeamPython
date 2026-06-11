@@ -53,7 +53,7 @@
       letter-spacing: 0.05em;
     }
 
-    /* #stop {
+    #stop {
       align-self: flex-start;
       background: #f11717;
       color: #1e1f29;
@@ -64,7 +64,7 @@
       border-radius: 4px;
       cursor: pointer;
       letter-spacing: 0.05em;
-    } */
+    }
 
     .tab-menu {
         display: flex;
@@ -113,7 +113,7 @@
 
     #run:hover { background: #69ff94; }
 
-    /* #stop:hover { background: #ff8069; } */
+    #stop:hover { background: #ff8069; }
 
     #output {
       background: #282a36;
@@ -189,7 +189,7 @@
         <textarea id="code"></textarea>
 
         <button id="run">▶ Run</button>
-        <!-- <button id="stop">⬣ Stop</button> -->
+        <button id="stop">⬣ Stop</button>
         <div id="output">Output will appear here...</div>
         <h3>Getting started...</h3>
         <p>Make sure to use the <span class="multicolor-word">
@@ -354,22 +354,22 @@ while cs.detect_color() != 'red':
       }
     });
 
-    // document.getElementById("stop").addEventListener("click", async () => {
-    //   const output = document.getElementById("output");
-    //   try {
-    //     const res = await fetch("http://localhost:5001/stop", {
-    //       method: "POST",
-    //       headers: { "Content-Type": "text/plain" },  // ← avoids preflight
-    //       // headers: { "Content-Type": "application/json" },
-    //     });
-    //     const data = await res.json();
-    //     output.textContent = data.output;
-    //     output.className = "";
-    //   } catch (e) {
-    //     output.textContent = "Could not reach server — is server.py running?";
-    //     output.className = "error";
-    //   }
-    // });
+    document.getElementById("stop").addEventListener("click", async () => {
+      const output = document.getElementById("output");
+      try {
+        const res = await fetch("http://localhost:5001/stop", {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },  // ← avoids preflight
+          // headers: { "Content-Type": "application/json" },
+        });
+        const data = await res.json();
+        output.textContent = data.output;
+        output.className = "";
+      } catch (e) {
+        output.textContent = "Could not reach server — is server.py running?";
+        output.className = "error";
+      }
+    });
 
     function switchTab(event, tabname) {
         var i, tabcontent, tabbutton;
