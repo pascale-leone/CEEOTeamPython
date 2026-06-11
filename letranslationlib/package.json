@@ -12,7 +12,7 @@
     },
     "build": {
         "appId": "com.easylego.app",
-        "productName": "Easy Lego",
+        "productName": "EasyLego",
         "mac": {
             "target": "dmg"
         },

@@ -29,7 +29,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
-    title: 'Easy Lego',
+    title: 'EasyLego',
     webPreferences: { nodeIntegration: false }
   });
 
