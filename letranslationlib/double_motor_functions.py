@@ -1,14 +1,29 @@
 import time
+import sys
 import legoeducation as le
 
+
 class doubleMotor(le.DoubleMotor):
+
+    def connect(self, card_color, card_serial):
+        for attempt in range(5):
+            try:
+                super().connect(card_color=card_color, card_serial=card_serial)
+                break
+            except Exception as e:
+                if "not ready" in str(e).lower() and attempt < 4:
+                    time.sleep(1)
+                else:
+                    raise
+        if not self.connected:
+            raise ConnectionError('Error connecting to Double Motor.')
        
     def move_steps(self, step=1):
         '''
         Move both motors at once for given number of steps. 
         One step defined to be 180 degrees.
         '''
-        self.movement_move_for_degrees(180*step)
+        self.movement_move_for_degrees(-180*step)
 
     def run(self):
         self.movement_move(direction=le.MOVEMENT_MOVE_DIRECTION_BACKWARD)
@@ -19,10 +34,10 @@ class doubleMotor(le.DoubleMotor):
     
     def run_left(self):
         # Rotate the right side of the Double Motor counterclockwise at 50% speed.
-        self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_LEFT, speed=50)
+        self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_LEFT)
 
     def run_right(self):
-        self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_RIGHT, speed=50)
+        self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_RIGHT)
 
     
 

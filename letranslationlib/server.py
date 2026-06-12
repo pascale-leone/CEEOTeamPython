@@ -2,8 +2,11 @@ import multiprocessing
 import signal
 import os
 import threading
+import json
+import sys
+from io import StringIO
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -13,17 +16,28 @@ current_process = None
 _process_lock = threading.Lock()
 
 
+class _QueueStdout:
+    def __init__(self, queue):
+        self.queue = queue
+
+    def write(self, text):
+        if text:
+            self.queue.put({"type": "output", "line": text})
+
+    def flush(self):
+        pass
+
+
 def _run_code_worker(code, queue):
     import single_motor_functions, double_motor_functions
     import color_sensor_functions, controller_functions
     import legoeducation as le
-    import time, io, sys
+    import time, sys
 
     def wait(seconds):
         time.sleep(seconds)
 
-    buffer = io.StringIO()
-    sys.stdout = buffer
+    sys.stdout = _QueueStdout(queue)
 
     fresh_namespace = {
         "colorSensor": color_sensor_functions.colorSensor,
@@ -47,12 +61,21 @@ def _run_code_worker(code, queue):
 
     try:
         exec(code, fresh_namespace)
-        output = buffer.getvalue()
-        queue.put({"status": "ok", "output": output or "Done"})
+        queue.put({"type": "done", "status": "ok"})
     except KeyboardInterrupt:
-        queue.put({"status": "stopped", "output": "Stopped."})
+        queue.put({"type": "done", "status": "stopped"})
+    except SystemExit:
+        queue.put({"type": "done", "status": "error"})
     except Exception as e:
-        queue.put({"status": "error", "output": str(e)})
+        while not queue.empty():
+            try:
+                queue.get_nowait()
+            except Exception:
+                break
+        queue.put({"type": "output", "line": str(e) + "\n"})
+        if type(e) is TypeError:
+            queue.put({"type": "output", "line":  str(e) + "\n\nMake sure your code matches the documentation exactly!\n"})
+        queue.put({"type": "done", "status": "error"})
     finally:
         sys.stdout = sys.__stdout__
         for val in fresh_namespace.values():
@@ -65,24 +88,46 @@ def _run_code_worker(code, queue):
 
 @app.route("/exec", methods=["POST"])
 def run_code():
-    global current_process
     code = request.json["code"]
     queue = multiprocessing.Queue()
 
-    with _process_lock:
-        current_process = multiprocessing.Process(target=_run_code_worker, args=(code, queue))
-        current_process.start()
+    def generate():
+        global current_process
+        proc = multiprocessing.Process(target=_run_code_worker, args=(code, queue))
+        with _process_lock:
+            current_process = proc
+        proc.start()
 
-    current_process.join()
+        has_output = False
+        while True:
+            try:
+                msg = queue.get(timeout=0.1)
+            except Exception:
+                if not proc.is_alive():
+                    if not has_output:
+                        yield f"data: {json.dumps({'type': 'output', 'line': 'Stopped.'})}\n\n"
+                    yield f"data: {json.dumps({'type': 'done', 'status': 'stopped'})}\n\n"
+                    break
+                continue
 
-    with _process_lock:
-        current_process = None
+            if msg.get("type") == "output":
+                has_output = True
+                yield f"data: {json.dumps(msg)}\n\n"
+            elif msg.get("type") == "done":
+                if not has_output and msg.get("status") == "ok":
+                    yield f"data: {json.dumps({'type': 'output', 'line': 'Done.'})}\n\n"
+                yield f"data: {json.dumps(msg)}\n\n"
+                break
 
-    try:
-        result = queue.get(timeout=1)
-    except:
-        result = {"status": "stopped", "output": "Stopped."}
-    return jsonify(result)
+        proc.join(timeout=1)
+        with _process_lock:
+            current_process = None
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.route("/stop", methods=["POST"])

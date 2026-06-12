@@ -35,7 +35,7 @@
     .CodeMirror {
       height: 300px;
       border-radius: 6px;
-      font-size: 14px;
+      font-size: 20px;
       font-family:monospace;
       line-height: 1.6;
     }
@@ -66,6 +66,11 @@
       letter-spacing: 0.05em;
     }
 
+    #stopsign {
+      font-size: 18px;
+      line-height: 0;
+    }
+
     .tab-menu {
         display: flex;
         flex-direction: column;
@@ -83,9 +88,18 @@
         padding: 10px 20px;
         text-align: left;
         cursor: pointer;
-        font-size: 13px;
-        border-left: 3px solid transparent;
+        font-size: 15px;
+        border-left: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 8px;
      }
+    .button-img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
 
     .tab-button:hover {
         background: #44475a;
@@ -111,7 +125,7 @@
 
     }
 
-    #run:hover { background: #69ff94; }
+    #run:hover { background: #70fc98; }
 
     #stop:hover { background: #ff8069; }
 
@@ -170,16 +184,29 @@
 
     #output.error { border-left-color: #ff5555; color: #ff5555; }
     #output.success { border-left-color: #50fa7b; }
+
+    .image-container {
+                padding: 20px;
+                text-align: left;
+                flex-grow: 1; /* Allows expansion */
+                align-items: center;
+            }
+    #legocar {
+      width: 500px;
+      height: 500px;
+      object-fit: contain;
+      
+    }
   </style>
 </head>
 <body>
 
   <div class="tab-menu">
     <button class="tab-button active" onclick="switchTab(event, 'tab1')" id="defaultOpen">Code</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab2')">Single Motor Functions</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab3')">Double Motor Functions</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab4')">Controller Functions</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab5')">Color Sensor Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab2')"><img class="button-img" id="sm" src="sm.png">Single Motor Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab3')"><img class="button-img" id="dm" src="dm.png">Double Motor Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab4')"><img class="button-img" id="c" src="c.png">Controller Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab5')"><img class="button-img" id="cs" src="cs.png">Color Sensor Functions</button>
     <button class="tab-button" onclick="switchTab(event, 'tab6')">General Python tips!</button>
     </div>
     <!-- Tab content -->
@@ -189,7 +216,7 @@
         <textarea id="code"></textarea>
 
         <button id="run">▶ Run</button>
-        <button id="stop">⬣ Stop</button>
+        <button id="stop"><span id="stopsign">⬣</span> Stop</button>
         <div id="output">Output will appear here...</div>
         <h3>Getting started...</h3>
         <p>Make sure to use the <span class="multicolor-word">
@@ -247,28 +274,33 @@ c.drive(dm)
     
     <div id="tab2" class="tabcontent">
         <h3>Single Motor Functions</h3>
-        <p>connect to the motor<pre><code>sm.connect(card_color=color, card_serial='1234')</code></pre></p>
-        <p>spin the motor this many degrees<pre><code>sm.spin(degrees)</code></pre></p>
-        <p>stop the motor<pre><code>sm.stop()</code></pre></p>
-        <p>set the motor speed<pre><code>sm.set_speed(speed)</code></pre></p>
-        <p>run the motor<pre><code>sm.run()</code></pre></p>
+        <p>Connect to the single motor<pre><code>sm.connect(card_color=color, card_serial='1234')</code></pre></p>
+        <p>Spin the motor this many times! <pre><code>sm.spin(rotations)</code></pre></p>
+        <p>Stop the motor<pre><code>sm.stop()</code></pre></p>
+        <p>Set the motor speed<pre><code>sm.set_speed(speed)</code></pre></p>
+        <p>Run the motor<pre><code>sm.run()</code></pre></p>
            
     </div>
     
     <div id="tab3" class="tabcontent">
         <h3>Double Motor Functions</h3>
-        <p>connect to the motors <pre><code>dm.connect(card_color=color, card_serial='1234')</code></pre></p>
-        <p>move this many steps!<pre><code>dm.move_steps(1)</code></pre></p>
-        <p>run the motors <pre><code>dm.run()</code></pre></p>
-        <p>run the motors for this many milliseconds <pre><code>dm.run_time(time)</code></pre></p>
-        <p>run the left motor<pre><code>dm.run_left()</code></pre></p>
-        <p>run the right motor<pre><code>dm.run_right()</code></pre></p>
-        <p>turn left by this many degrees<pre><code>dm.turn_left(degrees)</code></pre></p>
-        <p>turn right by this many degrees<pre><code>dm.turn_right(degrees)</code></pre></p>
-        <p>set the motor speed <pre><code>dm.set_speed(speed)</code></pre></p>
-        <p>set the left motor speed <pre><code>dm.set_speed_left(speed)</code></pre></p>
-        <p>set the right motor speed<pre><code>dm.set_speed_right(speed)</code></pre></p>
-        <p>stop the motors<pre><code>dm.stop()</code></pre></p>
+        <p>Connect to the double motor <pre><code>dm.connect(card_color=color, card_serial='1234')</code></pre></p>
+        <p>Run the motors <pre><code>dm.run()</code></pre></p>
+        <p>Run the motors for this many milliseconds <pre><code>dm.run_time(time)</code></pre></p>
+        <p>Run the left motor<pre><code>dm.run_left()</code></pre></p>
+        <p>Run the right motor<pre><code>dm.run_right()</code></pre></p>
+        <p>Set the motor speed <pre><code>dm.set_speed(speed)</code></pre></p>
+        <p>Set the left motor speed <pre><code>dm.set_speed_left(speed)</code></pre></p>
+        <p>Set the right motor speed<pre><code>dm.set_speed_right(speed)</code></pre></p>
+        <p>Stop the motors<pre><code>dm.stop()</code></pre></p>
+        
+        <div class="image-container" style="display:flex;align-items:center;gap:16px;">
+          <h4 style="margin:0;">Did you build a car?</h4>
+          <img id="legocar" src="legocar.png">
+        </div>
+        <p>Move this many steps!<pre><code>dm.move_steps(1)</code></pre></p>
+        <p>Turn left by this many degrees<pre><code>dm.turn_left(degrees)</code></pre></p>
+        <p>Turn right by this many degrees<pre><code>dm.turn_right(degrees)</code></pre></p>
     </div>
     <div id="tab4" class="tabcontent">
         <h3>Controller Functions</h3>
@@ -338,16 +370,43 @@ while cs.detect_color() != 'red':
       const code = editor.getValue();
       const output = document.getElementById("output");
       output.className = "";
-      output.textContent = "Running...";
+      output.textContent = "";
+
       try {
         const res = await fetch("http://localhost:5001/exec", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code })
         });
-        const data = await res.json();
-        output.textContent = data.output;
-        output.className = data.status === "error" ? "error" : "success";
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const msg = JSON.parse(line.slice(6));
+              if (msg.type === "output") {
+                lastErrorLine = msg.line;
+                output.textContent += msg.line;
+              } else if (msg.type === "done") {
+                if (msg.status === "error") {
+                  output.textContent = lastErrorLine;
+                }
+                output.className = msg.status === "error" ? "error" : "success";
+              }
+            } catch {}
+          }
+        }
       } catch (e) {
         output.textContent = "Could not reach server — is server.py running?";
         output.className = "error";
