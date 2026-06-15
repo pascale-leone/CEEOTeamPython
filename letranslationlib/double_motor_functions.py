@@ -76,3 +76,4 @@ class doubleMotor(le.DoubleMotor):
 
     def stop(self):
         self.motor_stop()
+
