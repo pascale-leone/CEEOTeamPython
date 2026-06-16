@@ -4,3 +4,6 @@ npm-debug.log*
 yarn-error.log*
 dist/
 build/
+
+# Environment variables
+.env
