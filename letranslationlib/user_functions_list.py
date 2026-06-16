@@ -61,8 +61,8 @@ sm = single_motor_functions.singleMotor()
 "dm.run_left() - run the left motor"
 "dm.run_right() - run the right motor"
 
-"dm.turn_left(degrees) - turn left by this many degrees"
-"dm.turn_right(degrees) - turn right by this many degrees"
+"dm.turn_left(degrees) - turn the motor to the left (both wheels spin in opposite directions)"
+"dm.turn_right(degrees) - turn the motor right (like a car - both wheels spin in opposite directions)"
 
 "dm.set_speed(speed) - set the motor speed"
 "dm.set_speed_left(speed) - set the left motor speed"
