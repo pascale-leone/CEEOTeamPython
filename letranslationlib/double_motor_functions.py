@@ -32,12 +32,18 @@ class doubleMotor(le.DoubleMotor):
         self.movement_move_for_time(time)
 
     
-    def run_left(self):
-        # Rotate the right side of the Double Motor counterclockwise at 50% speed.
-        self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_LEFT)
+    def run_left(self, degrees=None):
+        if degrees is None:
+            self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_LEFT)
+        else:
+            self.motor_run_for_degrees(degrees=degrees, direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_LEFT)
 
-    def run_right(self):
-        self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_RIGHT)
+    def run_right(self, degrees=None):
+        if degrees is None:
+            self.motor_run(direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_RIGHT)
+        else:
+            self.motor_run_for_degrees(degrees=degrees, direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_RIGHT)
+
 
     
 

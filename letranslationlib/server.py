@@ -50,6 +50,7 @@ def _run_code_worker(code, queue):
         "purple": le.LEGO_COLOR_PURPLE,
         "blue": le.LEGO_COLOR_BLUE,
         "magenta": le.LEGO_COLOR_MAGENTA,
+        "pink": le.LEGO_COLOR_MAGENTA,
         "green": le.LEGO_COLOR_GREEN,
         "azure": le.LEGO_COLOR_AZURE,
         "teal": le.LEGO_COLOR_TEAL,

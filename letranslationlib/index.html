@@ -35,7 +35,7 @@
     .CodeMirror {
       height: 300px;
       border-radius: 6px;
-      font-size: 20px;
+      font-size: 16px;
       font-family:monospace;
       line-height: 1.6;
     }
@@ -92,6 +92,7 @@
         border-left: 1px solid transparent;
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 8px;
      }
     .button-img {
@@ -203,10 +204,10 @@
 
   <div class="tab-menu">
     <button class="tab-button active" onclick="switchTab(event, 'tab1')" id="defaultOpen">Code</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab2')"><img class="button-img" id="sm" src="sm.png">Single Motor Functions</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab3')"><img class="button-img" id="dm" src="dm.png">Double Motor Functions</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab4')"><img class="button-img" id="c" src="c.png">Controller Functions</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab5')"><img class="button-img" id="cs" src="cs.png">Color Sensor Functions</button>
+    <button class="tab-button" onclick="switchTab(event, 'tab2')">Single Motor Functions<img class="button-img" id="sm" src="sm.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab3')">Double Motor Functions<img class="button-img" id="dm" src="dm.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab4')">Controller Functions  <img class="button-img" id="c" src="c.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab5')">Color Sensor Functions<img class="button-img" id="cs" src="cs.png"></button>
     <button class="tab-button" onclick="switchTab(event, 'tab6')">General Python tips!</button>
     </div>
     <!-- Tab content -->
@@ -287,8 +288,8 @@ c.drive(dm)
         <p>Connect to the double motor <pre><code>dm.connect(card_color=color, card_serial='1234')</code></pre></p>
         <p>Run the motors <pre><code>dm.run()</code></pre></p>
         <p>Run the motors for this many milliseconds <pre><code>dm.run_time(time)</code></pre></p>
-        <p>Run the left motor<pre><code>dm.run_left()</code></pre></p>
-        <p>Run the right motor<pre><code>dm.run_right()</code></pre></p>
+        <p>Run the left motor<br><em>Try adding a number inside of the parenthesis! What happens?</em><pre><code>dm.run_left()</code></pre></p>
+        <p>Run the right motor<br><em>Try adding a number inside of the parenthesis! What happens?</em><pre><code>dm.run_right()</code></pre></p>
         <p>Set the motor speed <pre><code>dm.set_speed(speed)</code></pre></p>
         <p>Set the left motor speed <pre><code>dm.set_speed_left(speed)</code></pre></p>
         <p>Set the right motor speed<pre><code>dm.set_speed_right(speed)</code></pre></p>
@@ -304,19 +305,19 @@ c.drive(dm)
     </div>
     <div id="tab4" class="tabcontent">
         <h3>Controller Functions</h3>
-        <p>connect to the controller<pre><code>c.connect()</code></pre></p>
-        <p>control the double motor for 10 seconds using the controller sticks<pre><code>c.drive(dm)</code></pre></p>
-        <p>return True if left stick is up<pre><code>c.left_up()</code></pre></p>
-        <p>return True if left stick is down<pre><code>c.left_down()</code></pre></p>
-        <p>return True if left stick is released<pre><code>c.left_released()</code></pre></p>
-        <p>return True if right stick is up<pre><code>c.right_up()</code></pre></p>
-        <p>return True if right stick is down<pre><code>c.right_down()</code></pre></p>
-        <p>return True if right stick is released<pre><code>c.right_released()</code></pre></p>
+        <p>Connect to the controller<pre><code>c.connect()</code></pre></p>
+        <p>Control the double motor for 10 seconds using the controller sticks<pre><code>c.drive(dm)</code></pre></p>
+        <p>Return True if left stick is up<pre><code>c.left_up()</code></pre></p>
+        <p>Return True if left stick is down<pre><code>c.left_down()</code></pre></p>
+        <p>Return True if left stick is released<pre><code>c.left_released()</code></pre></p>
+        <p>Return True if right stick is up<pre><code>c.right_up()</code></pre></p>
+        <p>Return True if right stick is down<pre><code>c.right_down()</code></pre></p>
+        <p>Return True if right stick is released<pre><code>c.right_released()</code></pre></p>
     </div>
     <div id="tab5" class="tabcontent">
         <h3>Color Sensor Function</h3>
-        <p>connect to the color sensor<pre><code>cs.connect(card color, serial number)</code></pre></p>
-        <p>return the detected color<pre><code>cs.detect_color()</code></pre></p>
+        <p>Connect to the color sensor<pre><code>cs.connect(card color, serial number)</code></pre></p>
+        <p>Return the detected color<pre><code>cs.detect_color()</code></pre></p>
     </div>
     <div id="tab6" class="tabcontent">
         <h3>General Python tips!</h3>

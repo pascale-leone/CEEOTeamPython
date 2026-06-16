@@ -19,7 +19,8 @@
         "files": [
             "main.js",
             "index.html",
-            "dist/server"
+            "dist/server",
+            "*.png"
           ],
           "extraResources": [
             {
@@ -29,6 +30,11 @@
             {
               "from": "index.html",
               "to": "index.html"
+            },
+            {
+              "from": ".",
+              "to": ".",
+              "filter": ["*.png"]
             }
           ]
     }
