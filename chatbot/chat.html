@@ -292,6 +292,7 @@
       bubble.innerHTML = marked.parse(content);
     } else {
       bubble.textContent = content;
+      bubble.style.whiteSpace = "pre-wrap";
     }
 
     wrapper.appendChild(label);
