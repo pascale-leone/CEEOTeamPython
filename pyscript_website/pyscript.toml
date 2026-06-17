@@ -1,0 +1,15 @@
+name = "python_library_v3"
+# type = "pyodide"
+
+packages = ["legoeducation"]
+
+[files]
+"./color_sensor_functions.py" = ""
+"./controller_functions.py" = ""
+"./double_motor_functions.py" = ""
+"./single_motor_functions.py" =""
+"./plot.py" = ""
+
+[js_modules.main]
+"./ble.js" = "ble"
+"./config.js" = ""
