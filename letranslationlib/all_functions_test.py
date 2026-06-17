@@ -1,52 +1,54 @@
 import legoeducation as le
 import time
+from double_motor_functions import doubleMotor
+import double_motor_functions
 
-def wait(seconds: float):
-    """Pause for this many seconds.  wait(2) → wait 2 seconds."""
-    time.sleep(seconds)
+# def wait(seconds: float):
+#     """Pause for this many seconds.  wait(2) → wait 2 seconds."""
+#     time.sleep(seconds)
 
-class singleMotor(le.SingleMotor):
-    def __init__(self):
-        super().__init__()
+# class singleMotor(le.SingleMotor):
+#     def __init__(self):
+#         super().__init__()
 
-    def turn(self, degrees=360):
-        self.motor_run_for_degrees(degrees)
+#     def turn(self, degrees=360):
+#         self.motor_run_for_degrees(degrees)
 
-    #uses degrees - alternative?
+#     #uses degrees - alternative?
 
-    def stop(self):
-        self.motor_stop()
+#     def stop(self):
+#         self.motor_stop()
     
-    def set_speed(self, speed):
-        self.motor_set_speed(speed)
+#     def set_speed(self, speed):
+#         self.motor_set_speed(speed)
 
-    def run(self):
-        self.motor_run() 
+#     def run(self):
+#         self.motor_run() 
 
 
-class colorSensor(le.ColorSensor):
-    def __init__(self):
-        super().__init__()
+# class colorSensor(le.ColorSensor):
+#     def __init__(self):
+#         super().__init__()
     
-    def detect_color(self):
-        color_number = self.sensor.color
-        color_mapping = {
-            0: 'No color',
-            1: 'Red',
-            2: 'Yellow',
-            3: 'Blue',
-            4: 'Teal',
-            5: 'Green',
-            6: 'Purple',
-            7: 'White',
-            8: 'Magenta',
-            9: 'Orange',
-            10: 'Azure'
-        }
-        #detect the color, return the detected color
-        return color_mapping.get(color_number, 'Unknown')
+#     def detect_color(self):
+#         color_number = self.sensor.color
+#         color_mapping = {
+#             0: 'No color',
+#             1: 'Red',
+#             2: 'Yellow',
+#             3: 'Blue',
+#             4: 'Teal',
+#             5: 'Green',
+#             6: 'Purple',
+#             7: 'White',
+#             8: 'Magenta',
+#             9: 'Orange',
+#             10: 'Azure'
+#         }
+#         #detect the color, return the detected color
+#         return color_mapping.get(color_number, 'Unknown')
 
-help(le.DoubleMotor())   
+# help(le.DoubleMotor())   
 
 # sm = singleMotor()
 # cs = colorSensor()
@@ -69,3 +71,8 @@ help(le.DoubleMotor())
 # cs.disconnect()
 # sm.disconnect()
 # exit(0)
+
+dm = doubleMotor()
+dm.connect(le.LEGO_COLOR_MAGENTA, '1128')
+
+dm.plot()

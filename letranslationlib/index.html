@@ -12,6 +12,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
@@ -361,32 +362,47 @@
     }
     #chat-send-btn:hover    { background: #70fc98; }
     #chat-send-btn:disabled { background: #44475a; color: #6272a4; cursor: default; }
+
+    /* ── Plot panel ───────────────────────────────────────── */
+    .plot-panel {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      width: 300px;
+      flex-shrink: 0;
+      background: #282a36;
+      border-radius: 8px;
+      padding: 16px;
+      border-left: 3px solid #bd93f9;
+    }
+    .plot-panel h2 { margin: 0; font-size: 1rem; color: #bd93f9; }
+    .plot-panel canvas { width: 100% !important; }
   </style>
 </head>
 <body>
 
   <div class="tab-menu">
-    <button class="tab-button active" onclick="switchTab(event, 'tab1')" id="defaultOpen">Code</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab2')">Single Motor Functions<img class="button-img" id="sm" src="sm.png"></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab3')">Double Motor Functions<img class="button-img" id="dm" src="dm.png"></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab4')">Controller Functions  <img class="button-img" id="c" src="c.png"></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab5')">Color Sensor Functions<img class="button-img" id="cs" src="cs.png"></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab6')">General Python tips!</button>
-    <button class="tab-button" onclick="switchTab(event, 'tab7')">Ask the Tutor</button>
+    <button class="tab-button active" onclick="switchTab(event, 'tab1')" id="defaultOpen"><strong>Code</strong></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab2')"><strong>Single Motor Functions</strong><img class="button-img" id="sm" src="sm.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab3')"><strong>Double Motor Functions</strong><img class="button-img" id="dm" src="dm.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab4')"><strong>Controller Functions</strong><img class="button-img" id="c" src="c.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab5')"><strong>Color Sensor Functions</strong><img class="button-img" id="cs" src="cs.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab6')"><strong>General Python tips!</strong></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab7')"><strong>Ask the Tutor</strong></button>
     </div>
     <!-- Tab content -->
     <div class="tab-content-area">
     <div id="tab1" class="tabcontent">
-        <h2>Welcome to Python Lego Robotics!</h2>
+        <h2>Welcome to Python LEGO Robotics!</h2>
         <textarea id="code"></textarea>
-
+<!-- <span class="multicolor-word">
+          <span>c</span><span>o</span><span>l</span><span>o</span><span>r</span>
+         and  -->
         <button id="run">▶ Run</button>
         <button id="stop"><span id="stopsign">⬣</span> Stop</button>
         <div id="output">Output will appear here...</div>
         <h3>Getting started...</h3>
-        <p>Make sure to use the <span class="multicolor-word">
-          <span>c</span><span>o</span><span>l</span><span>o</span><span>r</span>
-         and <em>number</em> on your card!</p>
+        <p>Make sure to use the <strong>number</strong> on your card!</p>
         <table>
           <tr>
             <th>What are you using?</th>
@@ -397,7 +413,7 @@
             <th><pre class="tbl">
               <code>
 sm = singleMotor()
-sm.connect(card_color=orange, card_serial="1234")
+sm.connect(card_serial="1234")
             </code></pre></th>
           </tr>
           <tr>
@@ -405,7 +421,7 @@ sm.connect(card_color=orange, card_serial="1234")
             <th><pre class="tbl">
               <code>
 dm = doubleMotor()
-dm.connect(card_color=orange, card_serial="1234")
+dm.connect(card_serial="1234")
             </code></pre></th>
           </tr>
           <tr>
@@ -413,7 +429,7 @@ dm.connect(card_color=orange, card_serial="1234")
             <th><pre class="tbl">
               <code>
 c = controller()
-c.connect(card_color=orange, card_serial="1234")
+c.connect(card_serial="1234")
             </code></pre></th>
           </tr>
           <tr>
@@ -421,17 +437,17 @@ c.connect(card_color=orange, card_serial="1234")
             <th><pre class="tbl">
               <code>
 cs = colorSensor()
-cs.connect(card_color=orange, card_serial="1234")
+cs.connect(card_serial="1234")
             </code></pre></th>
           </tr>
         </table>
         <h3>Try driving!</h3>
         <pre><code>
 dm = doubleMotor()
-dm.connect(card_color=orange, card_serial="1234")
+dm.connect(card_serial="1234")
 
 c = controller()
-c.connect(card_color=orange, card_serial="1234")
+c.connect(card_serial="1234")
 
 c.drive(dm)
         </code></pre>
@@ -439,25 +455,30 @@ c.drive(dm)
     
     <div id="tab2" class="tabcontent">
         <h3>Single Motor Functions</h3>
-        <p>Connect to the single motor<pre><code>sm.connect(card_color=color, card_serial='1234')</code></pre></p>
+        <p>Define a single motor (always do this first!) <pre><code>sm = singleMotor()</code></pre> </p>
+        <p>Connect to the single motor<pre><code>sm.connect(card_serial='1234')</code></pre></p>
         <p>Spin the motor this many times! <pre><code>sm.spin(rotations)</code></pre></p>
         <p>Stop the motor<pre><code>sm.stop()</code></pre></p>
         <p>Set the motor speed<pre><code>sm.set_speed(speed)</code></pre></p>
         <p>Run the motor<pre><code>sm.run()</code></pre></p>
+        <p>See a plot of the motor's position<pre><code>sm.plot()</code></pre></p>
            
     </div>
     
     <div id="tab3" class="tabcontent">
         <h3>Double Motor Functions</h3>
-        <p>Connect to the double motor <pre><code>dm.connect(card_color=color, card_serial='1234')</code></pre></p>
+        <p>Define a double motor (always do this first!) <pre><code>dm = doubleMotor()</code></pre> </p>
+        <p>Connect to the double motor <pre><code>dm.connect(card_serial='1234')</code></pre></p>
         <p>Run the motors <pre><code>dm.run()</code></pre></p>
         <p>Run the motors for this many milliseconds <pre><code>dm.run_time(time)</code></pre></p>
-        <p>Run the left motor<br><em>Try adding a number inside of the parenthesis! What happens?</em><pre><code>dm.run_left()</code></pre></p>
-        <p>Run the right motor<br><em>Try adding a number inside of the parenthesis! What happens?</em><pre><code>dm.run_right()</code></pre></p>
+        <p>Run the left motor (<em>Try adding a number inside of the parenthesis! What happens?</em>)<pre><code>dm.run_left()</code></pre></p>
+        <p>Run the right motor (<em>Try adding a number inside of the parenthesis! What happens?</em>)<pre><code>dm.run_right()</code></pre></p>
         <p>Set the motor speed <pre><code>dm.set_speed(speed)</code></pre></p>
         <p>Set the left motor speed <pre><code>dm.set_speed_left(speed)</code></pre></p>
         <p>Set the right motor speed<pre><code>dm.set_speed_right(speed)</code></pre></p>
         <p>Stop the motors<pre><code>dm.stop()</code></pre></p>
+        <p>See a plot of the left motor's position<pre><code>dm.plot_left()</code></pre></p>
+        <p>See a plot of the right motor's position<pre><code>dm.plot_right()</code></pre></p>
         
         <div class="image-container" style="display:flex;align-items:center;gap:16px;">
           <h4 style="margin:0;">Did you build a car?</h4>
@@ -469,7 +490,8 @@ c.drive(dm)
     </div>
     <div id="tab4" class="tabcontent">
         <h3>Controller Functions</h3>
-        <p>Connect to the controller<pre><code>c.connect()</code></pre></p>
+        <p>Define a controller (always do this first!) <pre><code>c = controller()</code></pre> </p>
+        <p>Connect to the controller<pre><code>c.connect(card_serial="1234")</code></pre></p>
         <p>Control the double motor for 10 seconds using the controller sticks<pre><code>c.drive(dm)</code></pre></p>
         <p>Return True if left stick is up<pre><code>c.left_up()</code></pre></p>
         <p>Return True if left stick is down<pre><code>c.left_down()</code></pre></p>
@@ -480,14 +502,15 @@ c.drive(dm)
     </div>
     <div id="tab5" class="tabcontent">
         <h3>Color Sensor Function</h3>
-        <p>Connect to the color sensor<pre><code>cs.connect(card color, serial number)</code></pre></p>
+        <p>Define a color sensor (always do this first!) <pre><code>cs = colorSensor()</code></pre> </p>
+        <p>Connect to the color sensor<pre><code>cs.connect(card_serial="1234")</code></pre></p>
         <p>Return the detected color<pre><code>cs.detect_color()</code></pre></p>
     </div>
     <div id="tab6" class="tabcontent">
         <h3>General Python tips!</h3>
         <p>if statements - use these to make decisions in your code<br>
 
-            Example: Green means go!<br>
+            <em>Example:</em> Green means go!<br>
             <pre><code>
 if cs.detect_color() == 'green':
     print('The color is green!')
@@ -498,7 +521,7 @@ if cs.detect_color() == 'green':
             <br>
             for loops - use these to repeat code a certain number of times<br>
         
-            Example: Spin 5 times!<br>
+            <em>Example:</em> Spin 5 times!<br>
             <pre><code>
 for i in range(5):
     sm.spin()
@@ -506,10 +529,18 @@ for i in range(5):
             
             <br>
             while loops - use these to repeat code until a condition is met <br>
-            Example: Spin until we see red!<br>
+            <em>Example:</em> Spin until we see red!<br>
             <pre><code>
 while cs.detect_color() != 'red':
     sm.spin()
+            </code></pre>
+            </p>
+
+            <br>
+            variable - use these to store information <br>
+            <em>Example:</em> Store the color the sensor saw!<br>
+            <pre><code>
+color = cs.detect_color()
             </code></pre>
             </p>
     </div>
@@ -523,7 +554,7 @@ while cs.detect_color() != 'red':
       <div id="chat-container"></div>
       <div id="chat-welcome">
         <h3>Hi! I'm your Python tutor 👋</h3>
-        <p>Ask me anything about Lego robotics or Python. I'm here to help you learn!</p>
+        <p>Ask me anything about LEGO robotics or Python. I'm here to help you learn!</p>
         <div id="chat-chips">
           <button class="chat-chip" onclick="sendChip(this)">How do I make a car move forward?</button>
           <button class="chat-chip" onclick="sendChip(this)">What's a for loop?</button>
@@ -538,6 +569,21 @@ while cs.detect_color() != 'red':
     </div>
 </div>
 
+  <!-- Plot panels: sit outside tab-content-area so they persist across tab switches -->
+  <div id="plot-column" style="display:flex;flex-direction:column;gap:10px;flex-shrink:0;">
+    <div id="plot-panel-dm-left" class="plot-panel">
+      <h2>Left Motor Position</h2>
+      <canvas id="plot-canvas-dm-left"></canvas>
+    </div>
+    <div id="plot-panel-dm-right" class="plot-panel">
+      <h2>Right Motor Position</h2>
+      <canvas id="plot-canvas-dm-right"></canvas>
+    </div>
+    <div id="plot-panel-sm" class="plot-panel">
+      <h2>Motor Position</h2>
+      <canvas id="plot-canvas-sm"></canvas>
+    </div>
+  </div>
 
   <script>
     document.getElementById("defaultOpen").click();
@@ -554,11 +600,67 @@ while cs.detect_color() != 'red':
       }
     });
 
+    const plotCharts = {};
+    const CHANNEL_CONFIG = {
+      "dm_left":  { panelId: "plot-panel-dm-left",  canvasId: "plot-canvas-dm-left" },
+      "dm_right": { panelId: "plot-panel-dm-right", canvasId: "plot-canvas-dm-right" },
+      "sm":       { panelId: "plot-panel-sm",        canvasId: "plot-canvas-sm" },
+    };
+
+    function initPlot(channel) {
+      const cfg = CHANNEL_CONFIG[channel];
+      if (!cfg || plotCharts[channel]) return;
+      document.getElementById(cfg.panelId).style.display = "flex";
+      const ctx = document.getElementById(cfg.canvasId).getContext("2d");
+      plotCharts[channel] = new Chart(ctx, {
+        type: "line",
+        data: {
+          datasets: [{
+            label: "Position (°)",
+            data: [],
+            borderColor: "#bd93f9",
+            backgroundColor: "rgba(189,147,249,0.1)",
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.1
+          }]
+        },
+        options: {
+          animation: false,
+          scales: {
+            x: { type: "linear", title: { display: false }, ticks: { color: "#6272a4" }, grid: { color: "#44475a" } },
+            y: { min: -10, max: 400, title: { display: false }, ticks: { color: "#6272a4" }, grid: { color: "#44475a" } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function addPlotPoint(channel, x, y) {
+      if (!plotCharts[channel]) initPlot(channel);
+      const chart = plotCharts[channel];
+      if (!chart) return;
+      const data = chart.data.datasets[0].data;
+      data.push({ x, y });
+      if (data.length > 200) data.shift();
+      chart.update("none");
+    }
+
+    function destroyPlot() {
+      for (const [channel, chart] of Object.entries(plotCharts)) {
+        const cfg = CHANNEL_CONFIG[channel];
+        if (cfg) document.getElementById(cfg.panelId).style.display = "none";
+        chart.destroy();
+        delete plotCharts[channel];
+      }
+    }
+
     document.getElementById("run").addEventListener("click", async () => {
       const code = editor.getValue();
       const output = document.getElementById("output");
       output.className = "";
       output.textContent = "";
+      destroyPlot();
 
       try {
         const res = await fetch("http://localhost:5001/exec", {
@@ -586,11 +688,14 @@ while cs.detect_color() != 'red':
               if (msg.type === "output") {
                 lastErrorLine = msg.line;
                 output.textContent += msg.line;
+              } else if (msg.type === "plot_data") {
+                addPlotPoint(msg.channel, msg.x, msg.y);
               } else if (msg.type === "done") {
                 if (msg.status === "error") {
                   output.textContent = lastErrorLine;
                 }
                 output.className = msg.status === "error" ? "error" : "success";
+                destroyPlot();
               }
             } catch {}
           }
@@ -603,6 +708,7 @@ while cs.detect_color() != 'red':
 
     document.getElementById("stop").addEventListener("click", async () => {
       const output = document.getElementById("output");
+      destroyPlot();
       try {
         const res = await fetch("http://localhost:5001/stop", {
           method: "POST",
@@ -742,7 +848,7 @@ while cs.detect_color() != 'red':
         w.id = "chat-welcome";
         w.innerHTML = `
           <h3>Hi! I'm your Python tutor 👋</h3>
-          <p>Ask me anything about Lego robotics or Python. I'm here to help you learn!</p>
+          <p>Ask me anything about LEGO robotics or Python. I'm here to help you learn!</p>
           <div id="chat-chips">
             <button class="chat-chip" onclick="sendChip(this)">How do I make a car move forward?</button>
             <button class="chat-chip" onclick="sendChip(this)">What's a for loop?</button>

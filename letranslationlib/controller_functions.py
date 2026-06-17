@@ -5,7 +5,7 @@ import legoeducation as le
 
 class controller(le.Controller):
 
-    def connect(self, card_color, card_serial):
+    def connect(self, card_serial, card_color=None):
         for attempt in range(5):
             try:
                 super().connect(card_color=card_color, card_serial=card_serial)
@@ -46,6 +46,5 @@ class controller(le.Controller):
 
     def drive(self, dm, t=100): 
         for i in range(t):
-            print(self.left_position(), self.right_position())
             dm.movement_move_tank(self.left_position(), self.right_position())
             time.sleep(0.1)

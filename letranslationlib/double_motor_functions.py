@@ -1,11 +1,14 @@
 import time
 import sys
+import json
+import threading
 import legoeducation as le
+
 
 
 class doubleMotor(le.DoubleMotor):
 
-    def connect(self, card_color, card_serial):
+    def connect(self, card_serial, card_color=None):
         for attempt in range(5):
             try:
                 super().connect(card_color=card_color, card_serial=card_serial)
@@ -45,8 +48,6 @@ class doubleMotor(le.DoubleMotor):
             self.motor_run_for_degrees(degrees=degrees, direction=le.MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE, motor=le.MOTOR_RIGHT)
 
 
-    
-
     def turn_left(self, degrees=90):
         '''
         Turns left by specified number of degrees.
@@ -82,3 +83,35 @@ class doubleMotor(le.DoubleMotor):
 
     def stop(self):
         self.motor_stop()
+
+    def plot_left(self):
+        stop_event = threading.Event()
+        self._plot_stop_event = stop_event
+        counter = [0]
+
+        def _sample():
+            while not stop_event.is_set():
+                pos = self.motor[le.MOTOR_LEFT].absolutePosition
+                sys.stdout.write(f"\x00PLOT\x00{json.dumps({'x': counter[0], 'y': pos, 'channel': 'dm_left'})}")
+                sys.stdout.flush()
+                counter[0] += 1
+                time.sleep(0.05)
+
+        t = threading.Thread(target=_sample, daemon=True)
+        t.start()
+
+    def plot_right(self):
+        stop_event = threading.Event()
+        self._plot_stop_event = stop_event
+        counter = [0]
+
+        def _sample():
+            while not stop_event.is_set():
+                pos = self.motor[le.MOTOR_RIGHT].absolutePosition
+                sys.stdout.write(f"\x00PLOT\x00{json.dumps({'x': counter[0], 'y': pos, 'channel': 'dm_right'})}")
+                sys.stdout.flush()
+                counter[0] += 1
+                time.sleep(0.05)
+
+        t = threading.Thread(target=_sample, daemon=True)
+        t.start()
