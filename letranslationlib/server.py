@@ -151,10 +151,14 @@ class _QueueStdout:
 
 
 def _run_code_worker(code, queue):
+    import sys, time
+    from pathlib import Path
+    _lib_dir = str(Path(__file__).parent / "python")
+    if _lib_dir not in sys.path:
+        sys.path.insert(0, _lib_dir)
     import single_motor_functions, double_motor_functions
     import color_sensor_functions, controller_functions
     import legoeducation as le
-    import time, sys
 
     def wait(seconds):
         time.sleep(seconds)
