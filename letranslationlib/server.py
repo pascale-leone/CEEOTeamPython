@@ -272,16 +272,35 @@ def stop_code():
 def chat():
     data = request.get_json()
     messages = data.get("messages", [])
+    code = data.get("code", "").strip()
+    error = data.get("error", "").strip()
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
     client = _get_anthropic_client()
     if client is None:
         return jsonify({"error": "ANTHROPIC_API_KEY not configured"}), 500
+
+    system = SYSTEM_PROMPT
+    if code:
+        system += (
+            "\n\n## Student's Current Code\n"
+            "The student currently has this code in their editor:\n"
+            f"```python\n{code}\n```\n"
+            "Refer to it when giving feedback or debugging. If they haven't written anything relevant yet, ignore this section."
+        )
+    if error:
+        system += (
+            "\n\n## Error from Last Run\n"
+            "The student's code produced this error when they ran it:\n"
+            f"```\n{error}\n```\n"
+            "Help them understand what the error means and how to fix it."
+        )
+
     try:
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=1024,
-            system=SYSTEM_PROMPT,
+            system=system,
             messages=messages,
         )
         return jsonify({"response": response.content[0].text})

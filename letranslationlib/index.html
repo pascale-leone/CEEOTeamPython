@@ -201,13 +201,43 @@
 
     }
 
-    /* ── Chat tab ─────────────────────────────────────── */
-    #tab7 {
+    /* ── Tutor side panel ─────────────────────────────── */
+    #open-tutor {
+      background: #44475a;
+      color: #f8f8f2;
+      border: 1px solid #6272a4;
       display: flex;
-      flex-direction: column;
-      height: 100%;
-      gap: 0;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: verdana;
+      font-size: 0.85rem;
     }
+
+    #close-tutor {
+      background: #44475a;
+      color: #f8f8f2;
+      border: 1px solid #6272a4;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: verdana;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    #tutor-side-panel {
+      flex-direction: column;
+      width: 300px;
+      flex-shrink: 0;
+      background: #282a36;
+      border-radius: 8px;
+      padding: 16px;
+      border-left: 3px solid #50fa7b;
+      gap: 0;
+      display: none;
+    }
+
     #chat-header {
       display: flex;
       align-items: center;
@@ -388,7 +418,6 @@
     <button class="tab-button" onclick="switchTab(event, 'tab4')"><strong>Controller Functions</strong><img class="button-img" id="c" src="c.png"></button>
     <button class="tab-button" onclick="switchTab(event, 'tab5')"><strong>Color Sensor Functions</strong><img class="button-img" id="cs" src="cs.png"></button>
     <button class="tab-button" onclick="switchTab(event, 'tab6')"><strong>General Python tips!</strong></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab7')"><strong>Ask the Tutor</strong></button>
     </div>
     <!-- Tab content -->
     <div class="tab-content-area">
@@ -545,29 +574,32 @@ color = cs.detect_color()
             </p>
     </div>
 
-    <!-- Chat tab -->
-    <div id="tab7" class="tabcontent">
-      <div id="chat-header">
-        <h2>Ask the Tutor</h2>
-        <button id="chat-clear-btn" onclick="clearChat()">New Chat</button>
-      </div>
-      <div id="chat-container"></div>
-      <div id="chat-welcome">
-        <h3>Hi! I'm your Python tutor 👋</h3>
-        <p>Ask me anything about LEGO robotics or Python. I'm here to help you learn!</p>
-        <div id="chat-chips">
-          <button class="chat-chip" onclick="sendChip(this)">How do I make a car move forward?</button>
-          <button class="chat-chip" onclick="sendChip(this)">What's a for loop?</button>
-          <button class="chat-chip" onclick="sendChip(this)">How do I detect colors?</button>
-          <button class="chat-chip" onclick="sendChip(this)">How do I use the controller?</button>
-        </div>
-      </div>
-      <div id="chat-input-bar">
-        <textarea id="chat-input" placeholder="Ask a question..." rows="1"></textarea>
-        <button id="chat-send-btn" onclick="sendMessage()">&#9658;</button>
+</div>
+
+  <!-- Tutor side panel: persistent chat alongside the code tab -->
+  <button id="open-tutor" onclick="toggleTutorPanel()">Ask the Tutor</button>
+  <div id="tutor-side-panel">
+   <button id="close-tutor" onclick="toggleTutorPanel()">Close the Tutor</button>
+    <div id="chat-header">
+      <h2>Ask the Tutor</h2>
+      <button id="chat-clear-btn" onclick="clearChat()">New Chat</button>
+    </div>
+    <div id="chat-container"></div>
+    <div id="chat-welcome">
+      <h3>Hi! I'm your Python tutor 👋</h3>
+      <p>Ask me anything about LEGO robotics or Python. I'm here to help you learn!</p>
+      <div id="chat-chips">
+        <button class="chat-chip" onclick="sendChip(this)">How do I make a car move forward?</button>
+        <button class="chat-chip" onclick="sendChip(this)">What's a for loop?</button>
+        <button class="chat-chip" onclick="sendChip(this)">How do I detect colors?</button>
+        <button class="chat-chip" onclick="sendChip(this)">How do I use the controller?</button>
       </div>
     </div>
-</div>
+    <div id="chat-input-bar">
+      <textarea id="chat-input" placeholder="Ask a question..." rows="1"></textarea>
+      <button id="chat-send-btn" onclick="sendMessage()">&#9658;</button>
+    </div>
+  </div>
 
   <!-- Plot panels: sit outside tab-content-area so they persist across tab switches -->
   <div id="plot-column" style="display:flex;flex-direction:column;gap:10px;flex-shrink:0;">
@@ -655,6 +687,18 @@ color = cs.detect_color()
       }
     }
 
+    function toggleTutorPanel() {
+      if (document.getElementById("tutor-side-panel").style.display !== "none") {
+        document.getElementById("tutor-side-panel").style.display = "none";
+        document.getElementById("close-tutor").style.display = "none";
+        document.getElementById("open-tutor").style.display = "flex";
+      } else {
+        document.getElementById("tutor-side-panel").style.display = "flex";
+        document.getElementById("close-tutor").style.display = "flex";
+        document.getElementById("open-tutor").style.display = "none";
+      }
+    }
+
     document.getElementById("run").addEventListener("click", async () => {
       const code = editor.getValue();
       const output = document.getElementById("output");
@@ -725,13 +769,13 @@ color = cs.detect_color()
     });
 
     function switchTab(event, tabname) {
-        var i, tabcontent, tabbutton;
-
-        tabcontent = document.getElementsByClassName("tabcontent");
         document.querySelectorAll(".tabcontent").forEach(t => t.style.display = "none");
         document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
         document.getElementById(tabname).style.display = "block";
         event.currentTarget.classList.add("active");
+
+        const tutorPanel = document.getElementById("tutor-side-panel");
+        tutorPanel.style.display = tabname === "tab1" ? "flex" : "none";
     }
 
     // ── Chat tab ──────────────────────────────────────────────
@@ -821,7 +865,11 @@ color = cs.detect_color()
           const res = await fetch("http://localhost:5001/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: chatMessages }),
+            body: JSON.stringify({
+              messages: chatMessages,
+              code: editor.getValue().trim(),
+              error: (() => { const o = document.getElementById("output"); return o.classList.contains("error") ? o.textContent.trim() : ""; })(),
+            }),
           });
           const data = await res.json();
           removeTyping();
