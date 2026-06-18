@@ -207,12 +207,14 @@
       color: #f8f8f2;
       border: 1px solid #6272a4;
       display: flex;
-      padding: 6px 14px;
+      padding: 3px 14px;
       border-radius: 6px;
       cursor: pointer;
       font-family: verdana;
       font-size: 0.85rem;
+      align-self: flex-start;
     }
+    #open-tutor:hover { background: #6272a4; }
 
     #close-tutor {
       background: #44475a;
@@ -224,7 +226,10 @@
       font-family: verdana;
       font-size: 0.85rem;
       display: none;
+      align-self: flex-end;
+      margin-bottom:8px;
     }
+    #close-tutor:hover { background: #6272a4; }
 
     #tutor-side-panel {
       flex-direction: column;
@@ -775,7 +780,7 @@ color = cs.detect_color()
         event.currentTarget.classList.add("active");
 
         const tutorPanel = document.getElementById("tutor-side-panel");
-        tutorPanel.style.display = tabname === "tab1" ? "flex" : "none";
+        if (tabname !== "tab1") tutorPanel.style.display = "none";
     }
 
     // ── Chat tab ──────────────────────────────────────────────
