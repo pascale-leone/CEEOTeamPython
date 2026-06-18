@@ -1,5 +1,4 @@
 import multiprocessing
-import signal
 import os
 import threading
 import json
@@ -264,7 +263,7 @@ def stop_code():
     with _process_lock:
         proc = current_process
     if proc and proc.is_alive():
-        os.kill(proc.pid, signal.SIGINT)
+        proc.terminate()
         proc.join(timeout=3)
         if proc.is_alive():
             proc.kill()

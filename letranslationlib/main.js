@@ -15,10 +15,11 @@ function waitForServer(url, retries, callback) {
 
 
 function startFlask() {
+    const ext = process.platform === 'win32' ? '.exe' : '';
     const serverPath = app.isPackaged
-      ? path.join(process.resourcesPath, 'server')
-      : path.join(__dirname, 'dist', 'server');
-  
+      ? path.join(process.resourcesPath, 'server' + ext)
+      : path.join(__dirname, 'dist', 'server' + ext);
+
     flaskProcess = spawn(serverPath, []);
   
     flaskProcess.stdout.on('data', d => console.log('Flask:', d.toString()));
