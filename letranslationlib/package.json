@@ -32,9 +32,8 @@
               "to": "index.html"
             },
             {
-              "from": ".",
-              "to": ".",
-              "filter": ["*.png"]
+              "from": "images",
+              "to": "images"
             },
             {
               "from": "../.env",

@@ -780,7 +780,14 @@ color = cs.detect_color()
         event.currentTarget.classList.add("active");
 
         const tutorPanel = document.getElementById("tutor-side-panel");
-        if (tabname !== "tab1") tutorPanel.style.display = "none";
+        if (tabname !== "tab1") {
+            tutorPanel.style.display = "none";
+            document.getElementById("open-tutor").style.display = "none";
+            document.getElementById("close-tutor").style.display = "none";
+        } else {
+            document.getElementById("open-tutor").style.display = "flex";
+            document.getElementById("close-tutor").style.display = "none";
+        }
     }
 
     // ── Chat tab ──────────────────────────────────────────────
