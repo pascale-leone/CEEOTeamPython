@@ -1,2 +1,3 @@
 # API key — never commit this
 config.js
+.env
