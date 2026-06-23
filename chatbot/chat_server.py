@@ -1,21 +1,10 @@
 import os
-import sys
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import anthropic
-from dotenv import load_dotenv
-from pathlib import Path
+import requests as _requests
 
-load_dotenv(Path(__file__).parent.parent / ".env", override=True)
-
-api_key = os.environ.get("ANTHROPIC_API_KEY")
-print(f"DEBUG key loaded: {repr(api_key[:20]) if api_key else 'NONE'}")
-if not api_key:
-    print("Error: ANTHROPIC_API_KEY environment variable is not set.")
-    print("Run: export ANTHROPIC_API_KEY='your-key-here'")
-    sys.exit(1)
-
-client = anthropic.Anthropic(api_key=api_key)
+PROXY_URL = os.environ.get("EASYLEGO_PROXY_URL", "https://easylego-proxy.onrender.com")
+PROXY_SECRET = os.environ.get("EASYLEGO_PROXY_SECRET", "")
 
 SYSTEM_PROMPT = """You are a friendly Python tutor helping elementary school students learn to code LEGO robotics. You are patient, encouraging, and use simple language.
 
@@ -103,16 +92,20 @@ def chat():
         return jsonify({"error": "No messages provided"}), 400
 
     try:
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            messages=messages,
+        headers = {"Content-Type": "application/json"}
+        if PROXY_SECRET:
+            headers["X-EasyLego-Secret"] = PROXY_SECRET
+        proxy_resp = _requests.post(
+            f"{PROXY_URL}/chat",
+            json={"messages": messages, "system": SYSTEM_PROMPT,
+                  "model": "claude-haiku-4-5-20251001", "max_tokens": 1024},
+            headers=headers,
+            timeout=30,
         )
-        reply = response.content[0].text
-        return jsonify({"response": reply})
+        proxy_resp.raise_for_status()
+        return jsonify(proxy_resp.json())
     except Exception as e:
-        print(f"API error: {e}")
+        print(f"Chat proxy error: {e}")
         return jsonify({"error": str(e)}), 500
 
 

@@ -35,10 +35,6 @@
               "from": "images",
               "to": "images"
             },
-            {
-              "from": "../.env",
-              "to": ".env"
-            }
           ]
     }
 }
