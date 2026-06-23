@@ -13,7 +13,7 @@ class singleMotor(le.SingleMotor):
     def __init__(self):
         super().__init__()
 
-    def connect(self, card_color, card_serial):
+    def connect(self, card_serial, card_color=None):
         for attempt in range(5):
             try:
                 super().connect(card_color=card_color, card_serial=card_serial)
@@ -42,7 +42,7 @@ class singleMotor(le.SingleMotor):
 
 class doubleMotor(le.DoubleMotor):
 
-    def connect(self, card_color, card_serial):
+    def connect(self, card_serial, card_color=None):
         for attempt in range(5):
             try:
                 super().connect(card_color=card_color, card_serial=card_serial)
@@ -121,7 +121,7 @@ class doubleMotor(le.DoubleMotor):
 
 class controller(le.Controller):
 
-    def connect(self, card_color, card_serial):
+    def connect(self, card_serial, card_color=None):
         for attempt in range(5):
             try:
                 super().connect(card_color=card_color, card_serial=card_serial)
@@ -169,7 +169,7 @@ class colorSensor(le.ColorSensor):
     def __init__(self):
         super().__init__()
 
-    def connect(self, card_color, card_serial):
+    def connect(self, card_serial, card_color=None):
         for attempt in range(5):
             try:
                 super().connect(card_color=card_color, card_serial=card_serial)
@@ -200,3 +200,18 @@ class colorSensor(le.ColorSensor):
         #detect the color, return the detected color
         return color_mapping.get(color_number, 'Unknown')
 
+def wait(seconds: float):
+    time.sleep(seconds)
+
+
+azure =   "LEGO_COLOR_AZURE"
+blue =   "LEGO_COLOR_BLUE"
+cyan =   "LEGO_COLOR_CYAN"
+green =   "LEGO_COLOR_GREEN"
+red =     "LEGO_COLOR_RED"
+yellow =  "LEGO_COLOR_YELLOW"
+white =   "LEGO_COLOR_WHITE"
+black =   "LEGO_COLOR_BLACK"
+orange =  "LEGO_COLOR_ORANGE"
+purple =  "LEGO_COLOR_PURPLE"
+magenta = "LEGO_COLOR_MAGENTA"
