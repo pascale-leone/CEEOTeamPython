@@ -23,7 +23,6 @@
         "extraResources": [
             { "from": "index.html", "to": "index.html" },
             { "from": "images",     "to": "images"     },
-            { "from": "../.env",    "to": ".env"        }
         ],
         "mac": {
             "target": "dmg",
