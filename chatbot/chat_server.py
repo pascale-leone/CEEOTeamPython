@@ -1,10 +1,19 @@
 import os
+import threading
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests as _requests
 
 PROXY_URL = os.environ.get("EASYLEGO_PROXY_URL", "https://ceeoteampython.onrender.com")
 PROXY_SECRET = os.environ.get("EASYLEGO_PROXY_SECRET", "")
+
+def _warm_proxy():
+    try:
+        _requests.get(f"{PROXY_URL}/health", timeout=60)
+    except Exception:
+        pass
+
+threading.Thread(target=_warm_proxy, daemon=True).start()
 
 SYSTEM_PROMPT = """You are a friendly Python tutor helping elementary school students learn to code LEGO robotics. You are patient, encouraging, and use simple language.
 
@@ -100,7 +109,7 @@ def chat():
             json={"messages": messages, "system": SYSTEM_PROMPT,
                   "model": "claude-haiku-4-5-20251001", "max_tokens": 1024},
             headers=headers,
-            timeout=30,
+            timeout=60,
         )
         proxy_resp.raise_for_status()
         return jsonify(proxy_resp.json())
