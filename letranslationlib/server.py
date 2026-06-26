@@ -7,7 +7,7 @@ import requests as _requests
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 
-PROXY_URL = os.environ.get("EASYLEGO_PROXY_URL", "https://easylego-proxy.onrender.com")
+PROXY_URL = os.environ.get("EASYLEGO_PROXY_URL", "https://ceeoteampython.onrender.com")
 PROXY_SECRET = os.environ.get("EASYLEGO_PROXY_SECRET", "")
 
 SYSTEM_PROMPT = """You are a friendly Python tutor helping elementary school students learn to code LEGO robotics. You are patient, encouraging, and use simple language.
