@@ -3,18 +3,10 @@
 
 a = Analysis(
     ['server.py'],
-    pathex=['python'],
+    pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=[
-        'dotenv', 'dotenv.main', 'dotenv.compat',
-        'anthropic', 'anthropic._utils', 'anthropic.lib',
-        'anthropic.lib.streaming', 'anthropic.resources',
-        'anthropic.resources.messages', 'anthropic.types',
-        'httpx', 'httpx._transports.default',
-        'anyio', 'anyio._backends._asyncio', 'anyio._backends._trio',
-        'sniffio', 'certifi', 'h11',
-    ],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

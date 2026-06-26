@@ -253,6 +253,8 @@ def chat():
     error = data.get("error", "").strip()
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
+
+
     system = SYSTEM_PROMPT
     if code:
         system += (

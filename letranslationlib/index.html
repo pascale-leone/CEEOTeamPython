@@ -9,8 +9,10 @@
   <!-- CodeMirror -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -412,6 +414,32 @@
     }
     .plot-panel h2 { margin: 0; font-size: 1rem; color: #bd93f9; }
     .plot-panel canvas { width: 100% !important; }
+
+    /* Autocomplete hint dropdown — Dracula-matched */
+    .CodeMirror-hints {
+      background: #282a36;
+      border: 1px solid #44475a;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      font-family: monospace;
+      font-size: 14px;
+      padding: 4px 0;
+      z-index: 9999;
+    }
+    .CodeMirror-hint {
+      color: #f8f8f2;
+      padding: 4px 14px;
+      cursor: pointer;
+    }
+    .CodeMirror-hint-active {
+      background: #44475a;
+      color: #50fa7b;
+    }
+    .cm-hint-sig {
+      color: #6272a4;
+      font-size: 12px;
+      margin-left: 8px;
+    }
   </style>
 </head>
 <body>
@@ -624,6 +652,93 @@ color = cs.detect_color()
 
   <script>
     document.getElementById("defaultOpen").click();
+
+    // ── LEGO class autocomplete ────────────────────────────────────────────────
+
+    const CLASS_METHODS = {
+      doubleMotor: [
+        { name: "connect",         sig: "(card_serial)" },
+        { name: "move_steps",      sig: "(step=1)" },
+        { name: "run",             sig: "()" },
+        { name: "run_time",        sig: "(time=2000)" },
+        { name: "run_left",        sig: "(degrees=None)" },
+        { name: "run_right",       sig: "(degrees=None)" },
+        { name: "turn_left",       sig: "(degrees=90)" },
+        { name: "turn_right",      sig: "(degrees=90)" },
+        { name: "set_speed",       sig: "(speed)" },
+        { name: "set_speed_left",  sig: "(speed)" },
+        { name: "set_speed_right", sig: "(speed)" },
+        { name: "stop",            sig: "()" },
+        { name: "plot_left",       sig: "()" },
+        { name: "plot_right",      sig: "()" },
+      ],
+      singleMotor: [
+        { name: "connect",   sig: "(card_serial)" },
+        { name: "spin",      sig: "(rotations=1)" },
+        { name: "stop",      sig: "()" },
+        { name: "set_speed", sig: "(speed)" },
+        { name: "run",       sig: "()" },
+        { name: "plot",      sig: "()" },
+      ],
+      colorSensor: [
+        { name: "connect",      sig: "(card_serial)" },
+        { name: "detect_color", sig: "()" },
+      ],
+      controller: [
+        { name: "connect",        sig: "(card_serial)" },
+        { name: "left_up",        sig: "()" },
+        { name: "left_down",      sig: "()" },
+        { name: "left_released",  sig: "()" },
+        { name: "right_up",       sig: "()" },
+        { name: "right_down",     sig: "()" },
+        { name: "right_released", sig: "()" },
+        { name: "left_position",  sig: "()" },
+        { name: "right_position", sig: "()" },
+        { name: "drive",          sig: "(dm, t=100)" },
+      ],
+    };
+
+    function buildVarMap(code) {
+      const pattern = /^([A-Za-z_]\w*)\s*=\s*(doubleMotor|singleMotor|colorSensor|controller)\s*\(/gm;
+      const map = {};
+      let match;
+      while ((match = pattern.exec(code)) !== null) {
+        map[match[1]] = match[2];
+      }
+      return map;
+    }
+
+    function legoHint(cm) {
+      const cursor = cm.getCursor();
+      const before = cm.getLine(cursor.line).slice(0, cursor.ch);
+      const dotMatch = before.match(/([A-Za-z_]\w*)\.([\w]*)$/);
+      if (!dotMatch) return null;
+      const varName = dotMatch[1], typed = dotMatch[2];
+      const className = buildVarMap(cm.getValue())[varName];
+      if (!className) return null;
+      const filtered = (CLASS_METHODS[className] || []).filter(m => m.name.startsWith(typed));
+      if (!filtered.length) return null;
+      return {
+        list: filtered.map(m => ({
+          text: m.name + "()",
+          render(el) {
+            el.innerHTML = `<span>${m.name}</span><span class="cm-hint-sig">${m.sig}</span>`;
+          },
+          hint(cm, data, completion) {
+            cm.replaceRange(m.name + "()", data.from, data.to);
+            if (m.sig !== "()") {
+              const cur = cm.getCursor();
+              cm.setCursor({ line: cur.line, ch: cur.ch - 1 });
+            }
+          }
+        })),
+        from: CodeMirror.Pos(cursor.line, cursor.ch - typed.length),
+        to:   CodeMirror.Pos(cursor.line, cursor.ch)
+      };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
       mode: "python",
       theme: "dracula",
@@ -633,7 +748,14 @@ color = cs.detect_color()
       indentWithTabs: false,
       extraKeys: {
         "Tab": cm => cm.execCommand("indentMore"),
-        "Shift-Tab": cm => cm.execCommand("indentLess")
+        "Shift-Tab": cm => cm.execCommand("indentLess"),
+        "Ctrl-Space": cm => CodeMirror.showHint(cm, legoHint, { completeSingle: false })
+      }
+    });
+
+    editor.on("inputRead", (cm, change) => {
+      if (change.text[0] === ".") {
+        CodeMirror.showHint(cm, legoHint, { completeSingle: false });
       }
     });
 
