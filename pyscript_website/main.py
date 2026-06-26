@@ -240,7 +240,8 @@ class DoubleMotorDevice(LegoDevice, _DM):
             except Exception:
                 pass
     def stop(self):
-        self.motor_stop(blocking=False)
+        self.motor_stop(motor=le.MOTOR_RIGHT, blocking=False)
+        self.motor_stop(motor=le.MOTOR_LEFT, blocking=False)
 
 class SingleMotorDevice(LegoDevice, _SM):
     label = "Single Motor (sm)"
@@ -314,14 +315,52 @@ def _create_device_plot(uid, device_type, device_label):
 _devices: dict = {}
 _uid_counter   = 0
 
+_DEVICE_OPTION_LABELS = {
+    'dm': 'Double Motor (dm)',
+    'sm': 'Single Motor (sm)',
+    'cs': 'Color Sensor (cs)',
+    'c':  'Controller (c)',
+}
+_DEVICE_ORDER = ['dm', 'sm', 'cs', 'c']
+
+def _remove_device_option(dtype):
+    sel = document.getElementById('device-type-select')
+    for i in range(sel.options.length):
+        if sel.options.item(i).value == dtype:
+            sel.remove(i)
+            break
+    if sel.options.length == 0:
+        document.getElementById('add-device-btn').disabled = True
+
+def _restore_device_option(dtype):
+    sel = document.getElementById('device-type-select')
+    opt = document.createElement('option')
+    opt.value = dtype
+    opt.text  = _DEVICE_OPTION_LABELS[dtype]
+    target_pos = _DEVICE_ORDER.index(dtype)
+    insert_before = None
+    for i in range(sel.options.length):
+        if _DEVICE_ORDER.index(str(sel.options.item(i).value)) > target_pos:
+            insert_before = sel.options.item(i)
+            break
+    if insert_before is not None:
+        sel.add(opt, insert_before)
+    else:
+        sel.add(opt)
+    document.getElementById('add-device-btn').disabled = False
+
 def _next_uid():
     global _uid_counter
     _uid_counter += 1
     return str(_uid_counter)
 
 def _on_remove(uid):
+    dev = _devices.get(uid)
+    dtype = getattr(dev, 'device_type', None)
     _devices.pop(uid, None)
     _plot_registry.pop(uid, None)
+    if dtype:
+        _restore_device_option(dtype)
 
 def add_device(event=None):
     sel   = document.getElementById('device-type-select')
@@ -330,7 +369,9 @@ def add_device(event=None):
         return
     uid = _next_uid()
     dev = DEVICE_TYPES[dtype](uid=uid, container_id='device-container', on_remove=_on_remove)
+    dev.device_type = dtype
     _devices[uid] = dev
+    _remove_device_option(dtype)
 
 document.getElementById('add-device-btn').onclick = create_proxy(add_device)
 
@@ -408,6 +449,14 @@ def _stop_all_devices():
         if dev.connected:
             try:
                 dev.stop()
+            except Exception as e:
+                print(f"Stop error on {dev.label}: {e}")
+
+def _reset_speeds():
+    for dev in _devices.values():
+        if dev.connected:
+            try:
+                dev.set_speed(50)
             except Exception as e:
                 print(f"Stop error on {dev.label}: {e}")
 
@@ -520,6 +569,7 @@ def stop_user_code(event=None):
         _running_task.cancel()
     _running_task = None
     _stop_all_devices()
+    _reset_speeds()
     _terminal_print('⏹ Stopped.', color='#F97316')
 
 

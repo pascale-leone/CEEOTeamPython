@@ -33,3 +33,5 @@ class controller(le.Controller):
                                   self.right_position(),
                                   blocking=False)
             await asyncio.sleep(0.1)
+        dm.stop()
+    

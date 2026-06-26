@@ -19,17 +19,17 @@ class colorSensor(le.ColorSensor):
         if isinstance(color_number, float) and math.isnan(color_number):
             return 'No color'
         mapping = {
-            0:  'No color',
-            1:  'Red',
-            2:  'Yellow',
-            3:  'Blue',
-            4:  'Teal',
-            5:  'Green',
-            6:  'Purple',
-            7:  'White',
-            8:  'Magenta',
-            9:  'Orange',
-            10: 'Azure',
+            0:  'no color',
+            1:  'red',
+            2:  'yellow',
+            3:  'blue',
+            4:  'teal',
+            5:  'green',
+            6:  'purple',
+            7:  'white',
+            8:  'magenta',
+            9:  'orange',
+            10: 'azure',
         }
         return mapping.get(int(color_number), 'No color')
 

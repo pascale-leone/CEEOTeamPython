@@ -37,7 +37,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 .dot-r{background:var(--red-lego);} .dot-y{background:var(--yellow);} .dot-g{background:#22C55E;}
 #topbar h1 { font-size:17px; font-weight:800; }
 
-/* DEVICE BAR */
+/* DEVICE BAR
 #devbar { height:56px; background:var(--surface); border-bottom:2px solid var(--border); display:flex; align-items:center; gap:10px; padding:0 22px; flex-shrink:0; flex-wrap:wrap; overflow:hidden; }
 #devbar label { font-size:13px; font-weight:700; color:var(--muted); white-space:nowrap; }
 #devbar select { padding:6px 10px; border:1.5px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text); font-weight:600; cursor:pointer; }
@@ -50,7 +50,89 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 .btn { border:none; border-radius:6px; padding:3px 9px; font-size:12px; font-weight:700; cursor:pointer; }
 .btn-connect { background:var(--blue); color:#fff; }
 .btn-remove  { background:none; color:var(--muted); font-size:14px; padding:0 3px; }
-.btn-remove:hover { color:var(--stop); }
+.btn-remove:hover { color:var(--stop); } */
+
+
+        /* ── Device bar ── */
+        #devbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        #devbar label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        #device-type-select {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 13px;
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+        }
+        #add-device-btn {
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        #add-device-btn:hover { background: #0052CC; }
+
+        /* ── Device cards ── */
+        #device-container { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .device-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            box-shadow: var(--shadow);
+        }
+        .card-header { display: flex; align-items: center; gap: 6px; }
+        .device-type-label { font-weight: 600; color: var(--blue); white-space: nowrap; }
+        .device-name {
+            font-size: 11px; color: var(--text-muted);
+            max-width: 90px; overflow: hidden;
+            text-overflow: ellipsis; white-space: nowrap;
+        }
+        .led {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--lego-red);
+            flex-shrink: 0;
+        }
+        .btn {
+            border: none; border-radius: 5px;
+            padding: 4px 10px; font-size: 12px;
+            font-weight: 600; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-connect { background: var(--blue); color: #fff; }
+        .btn-connect:hover { background: #0052CC; }
+        .btn-remove {
+            background: transparent; color: var(--text-muted);
+            font-size: 14px; padding: 2px 6px; line-height: 1;
+        }
+        .btn-remove:hover { color: var(--lego-red); }
+
 
 /* WORKSPACE */
 #workspace { display:flex; flex:1; overflow:hidden; min-height:0; }
@@ -81,6 +163,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 .rp-section.collapsed { flex:0 0 auto; }
 
 .rp-header { display:flex; align-items:center; justify-content:space-between; margin:8px 10px 0; padding:10px 16px; border-radius:50px; flex-shrink:0; }
+#sec-chal .rp-header { background:var(--chal-pill); }
 #sec-lib  .rp-header { background:var(--lib-pill); }
 #sec-plot .rp-header { background:var(--plt-pill); }
 #sec-ai   .rp-header { background:var(--ai-pill);  }
@@ -92,6 +175,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 .rp-section.collapsed .rp-body { display:none; }
 .rp-section.collapsed .rp-header { margin-bottom:6px; }
 
+    
 /* LIBRARY */
 .lib-body { padding:12px; }
 .cat-card { border-radius:var(--radius-lg); margin-bottom:8px; overflow:hidden; border:2px solid transparent; }
@@ -115,7 +199,8 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 .fn-example { background:#1A1B26; color:#9CDCFE; border-radius:7px; padding:8px 10px; font-family:var(--mono); font-size:12px; white-space:pre; line-height:1.7; margin-top:8px; }
 
 /* PLOTS */
-.plot-body { padding:10px 12px 12px; display:flex; flex-direction:column; gap:8px; height:100%; }
+.plot-body { padding:10px 12px 12px; display:flex; flex-direction:column; gap:8px; flex:1; min-height:0; }
+#sec-plot .rp-body { overflow:hidden; display:flex; flex-direction:column; }
 #plot-tab-strip { display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; }
 .plot-tab { display:flex; align-items:center; gap:5px; padding:5px 14px; border-radius:50px; border:2px solid var(--border); background:var(--bg); font-size:13px; font-weight:700; color:var(--muted); cursor:pointer; transition:background .15s,border-color .15s,color .15s; }
 .plot-tab:hover { background:#E5E7EB; color:var(--text); }
@@ -130,9 +215,9 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 .color-display { display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; }
 .color-tile { width:100%; height:48px; border-radius:var(--radius); border:1.5px solid var(--border); transition:background-color .3s; background:#E5E7EB; }
 .color-name { font-size:14px; font-weight:800; color:var(--text); }
-#plot-container { flex:1; min-height:0; position:relative; }
-.chart-panel { display:none; flex-direction:column; height:100%; gap:6px; padding-top:4px; }
-.chart-panel.active { display:flex; }
+#plot-container { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+.chart-panel { display:none; flex-direction:column; gap:6px; padding-top:4px; }
+.chart-panel.active { display:flex; flex:1; min-height:0; }
 .plot-empty { flex:1; display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--muted); text-align:center; padding:20px; }
 .plotly-div { flex:1; min-height:0; }
 
@@ -194,30 +279,72 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
   <!-- RIGHT PANEL -->
   <div id="right-panel">
 
+        
     <!-- LIBRARY -->
     <div class="rp-section" id="sec-lib">
       <div class="rp-header">
-        <span class="rp-title">📚 Library</span>
+        <span class="rp-title">Library</span>
         <button class="rp-toggle" onclick="toggleSection('sec-lib',this)">▾</button>
       </div>
       <div class="rp-body"><div class="lib-body">
 
         <div class="cat-card gn">
+          <button class="cat-btn open" onclick="toggleCat(this)">Challenges <span class="arrow">▶</span></button>
+          <div class="cat-content open">
+            <div class="fn-row"><div class="fn-name">Task 1</div><div class="fn-desc">Move the car forward for 2 seconds</div></div>
+            <div class="fn-row"><div class="fn-name">Task 2</div><div class="fn-desc">Spin the car left 5 times. </div></div>
+            <div class="fn-row"><div class="fn-name">Task 3</div><div class="fn-desc">Connect the car and color sensor. Spin the car until the color red is detected. </div></div>
+            <div class="fn-row"><div class="fn-name">Task 4</div><div class="fn-desc">Now move to the race track. Write a program that navigates the car around the track. How fast can you make it go? </div></div>
+            <div class="fn-row"><div class="fn-name">Task 5</div><div class="fn-desc">Use the color sensor to control the speed as the car goes around the track. Green means go (fast!), yellow is slow down, and red is stop. Note: the color sensor is bad at detecting from far away. If it is not picking up a reading try showing it the color directly. </div></div>
+            <div class="fn-row"><div class="fn-name">Task 6</div><div class="fn-desc">Connect the car and the controller. Write your own function to control the cars motors with the left and right levers of the controller. Can you navigate around the track with the controller? </div></div>
+          </div>
+        </div>
+              
+
+        <div class="cat-card gn">
           <button class="cat-btn open" onclick="toggleCat(this)">General <span class="arrow">▶</span></button>
           <div class="cat-content open">
-            <div class="fn-row"><div class="fn-name">wait(seconds)</div><div class="fn-desc">Pause for this many seconds</div></div>
-          </div>
+            <div class="fn-row"><div class="fn-name">wait(seconds)</div><div class="fn-desc">Pause for this many seconds. This code can run really fast, so use wait() in your loops to execute over a certain amount of time! </div></div>
+            <div class="fn-row"><div class="fn-name">if/elif/else</div><div class="fn-desc">If statements check for conditionals. Check if something is true, and if it is, do this! Add else or elif to add multiple execution pathways</div></div>
+            <div class="fn-example">if cs.detect_color() == 'green':
+    dm.run()
+elif cs.detect_color() == 'red':
+    dm.stop()</div>
+            <div class="fn-row"><div class="fn-name">conditionals</div><div class="fn-desc">equals - ==<br>
+                not equals  !=<br>
+                greater than  &gt<br>
+                greater than or equal to  &gt=<br>
+                less than  &lt <br>
+                less than or equal to  &lt= <br>
+                Combine conditionals using and/or! <br></div>
+            <div class="fn-example">if speed >= 50 and color == 'yellow':
+    speed = 20
+    print('Slow down!')</div>
+                    
+            <div class="fn-row"><div class="fn-name">for loops</div><div class="fn-desc">Execute a block of code a certain number of times. Use wait() to pause between instances!</div></div>
+            <div class="fn-example">for i in range(5):
+    sm.spin(1)
+    wait(0.5)</div>
+            <div class="fn-row"><div class="fn-name">while loops</div><div class="fn-desc">Execute a block of code while a condition is met</div></div>
+            <div class="fn-example">while cs.detect_color() != 'red':
+    dm.run()
+    wait(0.1)</div>
+            <div class="fn-row"><div class="fn-name">print statements</div><div class="fn-desc">Print statements can be helpful for debugging, and making sure your program is executing as expected. To print a message, use print('') or print(""). To print a stored variable, use print(variable_name).</div></div>
+            <div class="fn-example">color = cs.detect_color()
+    print('color detected!')
+    print(color)</div>
+          </div></div>
         </div>
 
         <div class="cat-card sm">
           <button class="cat-btn" onclick="toggleCat(this)">Single Motor — sm <span class="arrow">▶</span></button>
           <div class="cat-content">
             <div class="fn-row"><div class="fn-name">sm.spin(rotations)</div><div class="fn-desc">Spin for this many rotations</div></div>
-            <div class="fn-row"><div class="fn-name">sm.run()</div><div class="fn-desc">Run until stop()</div></div>
+            <div class="fn-row"><div class="fn-name">sm.run()</div><div class="fn-desc">Run the motor. Make sure you call stop() or it will keep running!</div></div>
             <div class="fn-row"><div class="fn-name">sm.stop()</div><div class="fn-desc">Stop the motor</div></div>
             <div class="fn-row"><div class="fn-name">sm.set_speed(speed)</div><div class="fn-desc">Set speed 0–100</div></div>
             <div class="fn-row"><div class="fn-name">sm.get_speed()</div><div class="fn-desc">Current speed</div></div>
-            <div class="fn-row"><div class="fn-name">sm.get_position()</div><div class="fn-desc">Cumulative rotation (°)</div></div>
+            <div class="fn-row"><div class="fn-name">sm.get_position()</div><div class="fn-desc">See how much the motor has rotation</div></div>
             <div class="fn-row"><div class="fn-name">sm.get_absolute_position()</div><div class="fn-desc">Position 0–360°</div></div>
             <div class="fn-example">sm.set_speed(60)
 sm.spin(3)</div>
@@ -227,11 +354,12 @@ sm.spin(3)</div>
         <div class="cat-card dm">
           <button class="cat-btn" onclick="toggleCat(this)">Double Motor — dm <span class="arrow">▶</span></button>
           <div class="cat-content">
-            <div class="fn-row"><div class="fn-name">dm.run()</div><div class="fn-desc">Drive forward until stop()</div></div>
-            <div class="fn-row"><div class="fn-name">dm.run_time(ms)</div><div class="fn-desc">Drive for this many milliseconds</div></div>
+            <div class="fn-row"><div class="fn-name">dm.run()</div><div class="fn-desc">Drive forward until stop(). Call dm.run_left(degrees) or dm.run_right(degrees) to run each motor individually </div></div>
+            <div class="fn-row"><div class="fn-name">dm.move_steps()</div><div class="fn-desc">Move forward in preset increments</div></div>
+            <div class="fn-row"><div class="fn-name">dm.run_time(seconds)</div><div class="fn-desc">Drive for this many seconds</div></div>
             <div class="fn-row"><div class="fn-name">dm.turn_left(degrees)</div><div class="fn-desc">Turn left</div></div>
             <div class="fn-row"><div class="fn-name">dm.turn_right(degrees)</div><div class="fn-desc">Turn right</div></div>
-            <div class="fn-row"><div class="fn-name">dm.set_speed(speed)</div><div class="fn-desc">Set speed 0–100</div></div>
+            <div class="fn-row"><div class="fn-name">dm.set_speed(speed)</div><div class="fn-desc">Set speed 0–100. Call dm.set_speed_left() or dm.set_speed_right to individually set either motor</div></div>
             <div class="fn-row"><div class="fn-name">dm.stop()</div><div class="fn-desc">Stop both motors</div></div>
             <div class="fn-row"><div class="fn-name">dm.get_speed('left')</div><div class="fn-desc">Speed of left motor</div></div>
             <div class="fn-row"><div class="fn-name">dm.get_position('left')</div><div class="fn-desc">Position of left motor (°)</div></div>
@@ -244,12 +372,12 @@ dm.stop()</div>
         <div class="cat-card cs">
           <button class="cat-btn" onclick="toggleCat(this)">Color Sensor — cs <span class="arrow">▶</span></button>
           <div class="cat-content">
-            <div class="fn-row"><div class="fn-name">cs.detect_color()</div><div class="fn-desc">Returns color e.g. 'Red'</div></div>
+            <div class="fn-row"><div class="fn-name">cs.detect_color()</div><div class="fn-desc">Returns color e.g. 'red'</div></div>
             <div class="fn-row"><div class="fn-name">cs.detect_rgb()</div><div class="fn-desc">Returns (R, G, B) values</div></div>
             <div class="fn-row"><div class="fn-name">cs.detect_hue()</div><div class="fn-desc">Hue 0–360</div></div>
             <div class="fn-row"><div class="fn-name">cs.detect_saturation()</div><div class="fn-desc">Saturation 0–100</div></div>
             <div class="fn-row"><div class="fn-name">cs.detect_reflection()</div><div class="fn-desc">Reflection 0–100</div></div>
-            <div class="fn-example">if cs.detect_color() == 'Red':
+            <div class="fn-example">if cs.detect_color() == 'red':
     dm.stop()</div>
           </div>
         </div>
@@ -257,9 +385,9 @@ dm.stop()</div>
         <div class="cat-card ct">
           <button class="cat-btn" onclick="toggleCat(this)">Controller — c <span class="arrow">▶</span></button>
           <div class="cat-content">
-            <div class="fn-row"><div class="fn-name">c.drive(dm)</div><div class="fn-desc">Drive dm with the sticks</div></div>
-            <div class="fn-row"><div class="fn-name">c.left_position()</div><div class="fn-desc">Left stick −100 to 100</div></div>
-            <div class="fn-row"><div class="fn-name">c.right_position()</div><div class="fn-desc">Right stick −100 to 100</div></div>
+            <div class="fn-row"><div class="fn-name">c.drive(dm)</div><div class="fn-desc">Drive the double motor with the contoller</div></div>
+            <div class="fn-row"><div class="fn-name">c.left_position()</div><div class="fn-desc">Gives the current position of the left stick −100 to 100</div></div>
+            <div class="fn-row"><div class="fn-name">c.right_position()</div><div class="fn-desc">Gives the current position of the right stick −100 to 100</div></div>
           </div>
         </div>
 
@@ -269,7 +397,7 @@ dm.stop()</div>
     <!-- PLOTS -->
     <div class="rp-section" id="sec-plot">
       <div class="rp-header">
-        <span class="rp-title">📈 Plots</span>
+        <span class="rp-title">Plots</span>
         <button class="rp-toggle" onclick="toggleSection('sec-plot',this)">▾</button>
       </div>
       <div class="rp-body">
@@ -287,7 +415,7 @@ dm.stop()</div>
     <!-- HELP / AI TUTOR -->
     <div class="rp-section" id="sec-ai">
       <div class="rp-header">
-        <span class="rp-title">💬 Help</span>
+        <span class="rp-title">Help</span>
         <button class="rp-toggle" onclick="toggleSection('sec-ai',this)">▾</button>
       </div>
       <div class="rp-body">
@@ -335,6 +463,7 @@ function toggleSection(id, btn) {
   sec.classList.toggle('collapsed', collapsing);
   btn.textContent = collapsing ? '▸' : '▾';
   if (id === 'sec-plot') window._pyPlottingActive = !collapsing;
+  requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
 }
 
 /* ── AI Tutor fetch ── */
@@ -353,13 +482,12 @@ function appendMessage(role, text) {
 async function sendToTutor(userMsg, editorCode) {
   appendMessage('user', userMsg);
 
-  const systemPrompt = `You are a friendly Python tutor helping elementary school students learn to code LEGO robotics. You are patient, encouraging, and use simple language.
+  const systemPrompt = `You are a friendly Python tutor helping elementary school students learn to code LEGO robotics. You are patient, encouraging, and use simple language. 
 
 Students use the following Python library to control the motors, sensors and controllers. Objects are pre-created for them:
 
 DOUBLE MOTOR (object: dm)
   dm = doubleMotor()
-  dm.connect(card_color, card_serial)     — connect to the double motor
   dm.move_steps(step=1)                   — move forward N steps (1 step = 180 degrees of rotation)
   dm.run()                                — run both motors continuously (if wait(seconds) used after, otherwise will only move a small amount) (both motors must run at same speed)
   dm.run_time(time=2000)                  — run both motors for N milliseconds
@@ -374,7 +502,6 @@ DOUBLE MOTOR (object: dm)
 
 SINGLE MOTOR (object: sm)
   sm = singleMotor()
-  sm.connect(card_color, card_serial)
   sm.spin(rotations=1)                    — spin N full rotations
   sm.run()                                — run the motor continuously
   sm.set_speed(speed)
@@ -382,12 +509,10 @@ SINGLE MOTOR (object: sm)
 
 COLOR SENSOR (object: cs)
   cs = colorSensor()
-  cs.connect(card_color, card_serial)
   cs.detect_color()                       — returns a color string: 'Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple', 'White', 'Teal', 'Magenta', 'Azure', or 'No color'
 
 CONTROLLER (object: c)
   c = controller()
-  c.connect(card_color, card_serial)
   c.drive(dm, t=100)                      — drive the car with joysticks for t iterations (0.1s each), default t=100, does not necessarily need time
   c.left_up()                             — True if left joystick pushed up
   c.left_down()                           — True if left joystick pushed down
@@ -400,12 +525,10 @@ CONTROLLER (object: c)
 
 Color constants for connect(): red, blue, green, yellow, orange, purple, white, black, teal, magenta, azure
 
-Example connection:
-  dm.connect(blue, "3A2B")
-  cs.connect(red, "9F1C")
-
 Teaching guidelines:
 - Always be encouraging. Learning to code is hard and students should feel proud of their effort.
+- Responses should be less than four sentences, and should be content focused. Keep personal messages brief.
+- Do not use emojis
 - Explain the "why" behind things, not just what to type.
 - IMPORTANT: The student is using a coding app that has sections they can already see on their screen: "Double Motor Functions", "Single Motor Functions", "Controller Functions", and "Color Sensor Functions". Always tell the student which of these sections to look at for help. Example: "For this, you'll want to look at the Double Motor Functions section of the app!" You always know which section applies based on what device the student is asking about — never say you don't know where to find it.
 - Keep code examples short and focused — show the minimum needed to illustrate the concept.
@@ -415,7 +538,7 @@ Teaching guidelines:
 - If you need more information to answer a question, ask for it first and wait for a response. You do not want to confuse the student with too much information.
 - If you don't know an answer, say that you don't know. Do not invent answers.
 - By the second or third prompt ask students to share their code. This allows you to debug and know that the students are actually trying to figure out the solution on their own.
-- If students have simple questions like "how do I make the left motor spin" you can provide the direct code. If they are asking more complex questions, first ask them to share the code they have already written.
+- You may NOT provide students with any code. You may debug their existing code when prompted, or point out errors. You may point them to what functions they need for their task. NEVER write code for studentsto use.
 - Do not call the students device a "robot" unless they do so first. Be specific about double motors and single motors.
 - Hints should not give away entirety of solution. Give structure without actual function calls.
 - Multiple different device types can connect to the same card color and serial number (ie. dm and sm), but two double motors should be connected to different cards. They connect via bluetooth, no physical connection.
@@ -478,24 +601,94 @@ window._toggleCsTrace = function(uid, traceIdx, btn) {
 <!-- CodeMirror 6 -->
 <script type="module">
 import { EditorView, basicSetup } from 'https://esm.sh/codemirror@6.0.1';
-import { python } from 'https://esm.sh/@codemirror/lang-python@6.1.6';
+import { python, pythonLanguage } from 'https://esm.sh/@codemirror/lang-python@6.1.6';
 import { oneDark } from 'https://esm.sh/@codemirror/theme-one-dark@6.1.2';
+import { keymap } from 'https://esm.sh/@codemirror/view@6';
+import { indentWithTab, toggleLineComment } from 'https://esm.sh/@codemirror/commands@6';
+import { snippetCompletion } from 'https://esm.sh/@codemirror/autocomplete@6';
+
+// ── Autocomplete: LEGO device function completions ────────────────────────────
+const snip = (template, completion) => snippetCompletion(template, { type: 'function', ...completion });
+
+const COMPLETIONS = {
+  dm: [
+    snip('run()',                    { label: 'run()',                    detail: 'Run both motors continuously' }),
+    snip('run_time(${seconds})',     { label: 'run_time(seconds)',        detail: 'Run for N milliseconds' }),
+    snip('run_left(${degrees})',     { label: 'run_left(degrees)',        detail: 'Run left motor' }),
+    snip('run_right(${degrees})',    { label: 'run_right(degrees)',       detail: 'Run right motor' }),
+    snip('move_steps(${step})',      { label: 'move_steps(step)',         detail: 'Move forward N steps' }),
+    snip('turn_left(${degrees})',    { label: 'turn_left(degrees)',       detail: 'Turn car left' }),
+    snip('turn_right(${degrees})',   { label: 'turn_right(degrees)',      detail: 'Turn car right' }),
+    snip('set_speed(${speed})',      { label: 'set_speed(speed)',         detail: 'Set speed for both motors (0–100)' }),
+    snip('set_speed_left(${speed})', { label: 'set_speed_left(speed)',    detail: 'Set left motor speed' }),
+    snip('set_speed_right(${speed})',{ label: 'set_speed_right(speed)',   detail: 'Set right motor speed' }),
+    snip('stop()',                   { label: 'stop()',                   detail: 'Stop both motors' }),
+    snip("get_speed('${side}')",     { label: "get_speed('left')",        detail: "Speed of 'left' or 'right' motor" }),
+    snip("get_position('${side}')",  { label: "get_position('left')",     detail: "Position of 'left' or 'right' motor (°)" }),
+  ],
+  sm: [
+    snip('spin(${rotations})',       { label: 'spin(rotations)',          detail: 'Spin N full rotations' }),
+    snip('run()',                    { label: 'run()',                    detail: 'Run motor continuously' }),
+    snip('stop()',                   { label: 'stop()',                   detail: 'Stop the motor' }),
+    snip('set_speed(${speed})',      { label: 'set_speed(speed)',         detail: 'Set speed (0–100)' }),
+    snip('get_speed()',              { label: 'get_speed()',              detail: 'Current speed' }),
+    snip('get_position()',           { label: 'get_position()',           detail: 'How much the motor has rotated' }),
+    snip('get_absolute_position()',  { label: 'get_absolute_position()', detail: 'Position 0–360°' }),
+  ],
+  cs: [
+    snip('detect_color()',           { label: 'detect_color()',           detail: "Returns color name e.g. 'red'" }),
+    snip('detect_rgb()',             { label: 'detect_rgb()',             detail: 'Returns (R, G, B) values' }),
+    snip('detect_hue()',             { label: 'detect_hue()',             detail: 'Hue 0–360' }),
+    snip('detect_saturation()',      { label: 'detect_saturation()',      detail: 'Saturation 0–100' }),
+    snip('detect_reflection()',      { label: 'detect_reflection()',      detail: 'Reflection 0–100' }),
+  ],
+  c: [
+    snip('drive(${dm})',             { label: 'drive(dm)',                detail: 'Drive double motor with controller' }),
+    snip('left_position()',          { label: 'left_position()',          detail: 'Left stick position (−100 to 100)' }),
+    snip('right_position()',         { label: 'right_position()',         detail: 'Right stick position (−100 to 100)' }),
+    snip('left_up()',                { label: 'left_up()',                detail: 'True if left stick pushed up' }),
+    snip('left_down()',              { label: 'left_down()',              detail: 'True if left stick pushed down' }),
+    snip('left_released()',          { label: 'left_released()',          detail: 'True if left stick released' }),
+    snip('right_up()',               { label: 'right_up()',               detail: 'True if right stick pushed up' }),
+    snip('right_down()',             { label: 'right_down()',             detail: 'True if right stick pushed down' }),
+    snip('right_released()',         { label: 'right_released()',         detail: 'True if right stick released' }),
+  ],
+};
+
+const GENERAL = [
+  snip('wait(${seconds})', { label: 'wait(seconds)', detail: 'Pause for N seconds' }),
+];
+
+function legoCompletions(context) {
+  // Dot-triggered: dm.xxx  sm.xxx  cs.xxx  c.xxx
+  const dot = context.matchBefore(/\b(dm|sm|cs|c)\.([\w]*)/);
+  if (dot) {
+    const obj = dot.text.split('.')[0];
+    const afterDot = dot.from + obj.length + 1;
+    return { from: afterDot, options: COMPLETIONS[obj] || [] };
+  }
+  // Word-triggered: general functions (wait, etc.)
+  const word = context.matchBefore(/\w+/);
+  if (word && (word.from < word.to || context.explicit)) {
+    return { from: word.from, options: GENERAL };
+  }
+  return null;
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 const STARTER = `# Connect your devices above, then write your program here
-# No need to type 'await' — it's handled automatically!
-
-# Example: drive until the sensor sees red
-while cs.detect_color() != 'Red':
-    dm.run()
-    wait(0.1)
-
-dm.stop()
-print('Stopped on red!')
 `;
 
 window.cmEditor = new EditorView({
   doc: STARTER,
-  extensions: [basicSetup, python(), oneDark, EditorView.lineWrapping],
+  extensions: [
+    basicSetup,
+    python(),
+    oneDark,
+    EditorView.lineWrapping,
+    keymap.of([indentWithTab, { key: 'Mod-/', run: toggleLineComment }]),
+    pythonLanguage.data.of({ autocomplete: legoCompletions }),
+  ],
   parent: document.getElementById('cm-editor'),
 });
 </script>

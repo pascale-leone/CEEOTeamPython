@@ -86,6 +86,7 @@ class DevicePlot:
         self._active_metric  = 'speed'
         self._metric_list    = []
         self._metric_ranges  = {}
+        self._metric_titles  = {}
 
         self._inject_tab_and_div()
         self._init_plotly()
@@ -116,7 +117,6 @@ class DevicePlot:
             wrapper = document.createElement('div')
             wrapper.id        = self._plot_div_id
             wrapper.className = 'chart-panel'
-            wrapper.style.height = '100%'
             wrapper.innerHTML = (
                 f'<div class="color-display">'
                 f'  <div class="color-tile" id="color-tile-{self.uid}"></div>'
@@ -145,7 +145,6 @@ class DevicePlot:
             wrapper = document.createElement('div')
             wrapper.id        = self._plot_div_id
             wrapper.className = 'chart-panel'
-            wrapper.style.height = '100%'
             motor_metrics = [
                 ('speed',            'Speed'),
                 ('power',            'Power'),
@@ -172,7 +171,6 @@ class DevicePlot:
             div = document.createElement('div')
             div.id        = self._plot_div_id
             div.className = 'chart-panel'
-            div.style.height = '100%'
             container.appendChild(div)
             self._plotly_target = self._plot_div_id
 
@@ -202,6 +200,7 @@ class DevicePlot:
     # ── Layout helper ────────────────────────────────────────────
     def _make_layout(self, y_range=None, y_title='Value'):
         layout = {
+            'autosize':       True,
             'margin':         {'l': 42, 'r': 10, 't': 10, 'b': 30},
             'paper_bgcolor':  'rgba(0,0,0,0)',
             'plot_bgcolor':   '#FAFAFA',
@@ -254,6 +253,7 @@ class DevicePlot:
         ]
         self._metric_list   = [m[0] for m in metrics]
         self._metric_ranges = {m[0]: m[2] for m in metrics}
+        self._metric_titles = {m[0]: m[1] for m in metrics}
 
         traces = []
         for metric, label, _ in metrics:
@@ -415,15 +415,16 @@ class DevicePlot:
             _to_js({'visible': visibility}),
         )
         y_range = self._metric_ranges.get(metric)
+        y_title = self._metric_titles.get(metric, 'Value')
         if y_range is not None:
             window.Plotly.relayout(
                 self._plotly_target,
-                _to_js({'yaxis.range': list(y_range), 'yaxis.autorange': False}),
+                _to_js({'yaxis.range': list(y_range), 'yaxis.autorange': False, 'yaxis.title.text': y_title}),
             )
         else:
             window.Plotly.relayout(
                 self._plotly_target,
-                _to_js({'yaxis.autorange': True}),
+                _to_js({'yaxis.autorange': True, 'yaxis.title.text': y_title}),
             )
         self._active_metric = metric
 
