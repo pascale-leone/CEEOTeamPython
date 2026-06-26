@@ -2,38 +2,12 @@ import multiprocessing
 import os
 import threading
 import json
-import sys
-from io import StringIO
-from pathlib import Path
-
-import anthropic
-from dotenv import load_dotenv
+import requests as _requests
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 
-
-def _find_env():
-    if hasattr(sys, '_MEIPASS'):
-        exe_dir = Path(sys.executable).parent
-        # Packaged .app: binary at Contents/Resources/server, .env is in same dir
-        if (exe_dir / ".env").exists():
-            return exe_dir / ".env"
-        # Unpackaged dev: binary at letranslationlib/dist/server, .env is two levels up
-        return exe_dir.parent.parent / ".env"
-    # Running as script: server.py is in letranslationlib/, .env is one level up
-    return Path(__file__).parent.parent / ".env"
-
-load_dotenv(_find_env(), override=True)
-
-_anthropic_client = None
-
-def _get_anthropic_client():
-    global _anthropic_client
-    if _anthropic_client is None:
-        key = os.environ.get("ANTHROPIC_API_KEY")
-        if key:
-            _anthropic_client = anthropic.Anthropic(api_key=key)
-    return _anthropic_client
+PROXY_URL = os.environ.get("EASYLEGO_PROXY_URL", "https://ceeoteampython.onrender.com")
+PROXY_SECRET = os.environ.get("EASYLEGO_PROXY_SECRET", "")
 
 SYSTEM_PROMPT = """You are a friendly Python tutor helping elementary school students learn to code LEGO robotics. You are patient, encouraging, and use simple language.
 
@@ -279,10 +253,6 @@ def chat():
     error = data.get("error", "").strip()
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
-    client = _get_anthropic_client()
-    if client is None:
-        return jsonify({"error": "ANTHROPIC_API_KEY not configured"}), 500
-
     system = SYSTEM_PROMPT
     if code:
         system += (
@@ -300,15 +270,20 @@ def chat():
         )
 
     try:
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            system=system,
-            messages=messages,
+        headers = {"Content-Type": "application/json"}
+        if PROXY_SECRET:
+            headers["X-EasyLego-Secret"] = PROXY_SECRET
+        proxy_resp = _requests.post(
+            f"{PROXY_URL}/chat",
+            json={"messages": messages, "system": system,
+                  "model": "claude-haiku-4-5-20251001", "max_tokens": 1024},
+            headers=headers,
+            timeout=30,
         )
-        return jsonify({"response": response.content[0].text})
+        proxy_resp.raise_for_status()
+        return jsonify(proxy_resp.json())
     except Exception as e:
-        print(f"Chat API error: {e}")
+        print(f"Chat proxy error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
