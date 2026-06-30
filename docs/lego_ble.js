@@ -1,13 +1,15 @@
-// LEGO CS+AI kit — Web Bluetooth layer
-// Service: 0000FD02-0000-1000-8000-00805F9B34FB (LEGO Education proprietary RPC)
+// LEGO CS+AI kit — Web Bluetooth layer (multi-device)
+// Each card (double motor, single motor, color sensor, controller) is its own BLE device.
+// Click "Connect" once per card. Device type is auto-detected from INFO_RESPONSE.
 // Protocol reverse-engineered from legoeducation Python library (rpc_message.py / basic_ble.py)
 
 const SERVICE_UUID = '0000fd02-0000-1000-8000-00805f9b34fb';
-const WRITE_UUID   = '0000fd02-0001-1000-8000-00805f9b34fb'; // computer → hub
-const NOTIFY_UUID  = '0000fd02-0002-1000-8000-00805f9b34fb'; // hub → computer
+const WRITE_UUID   = '0000fd02-0001-1000-8000-00805f9b34fb';
+const NOTIFY_UUID  = '0000fd02-0002-1000-8000-00805f9b34fb';
 
-// RPC message type IDs (from rpc_message.py)
+// RPC message type IDs
 const INFO_REQUEST                      = 0;
+const INFO_RESPONSE                     = 1;
 const DEVICE_NOTIFICATION_REQUEST       = 40;
 const DEVICE_NOTIFICATION               = 60;
 const MOTOR_RUN_COMMAND                 = 122;
@@ -22,50 +24,68 @@ const MOVEMENT_TURN_FOR_DEGREES_COMMAND = 160;
 const MOVEMENT_STOP_COMMAND             = 168;
 const MOVEMENT_SET_SPEED_COMMAND        = 170;
 
-// Inner notification sub-types (carried inside DEVICE_NOTIFICATION payload)
-const MOTOR_NOTIFICATION        = 10; // B motorBitMask, B motorState, H absPos, h power, b speed, l position, b gesture → 12 bytes
-const COLOR_SENSOR_NOTIFICATION = 12; // b color, B reflection, 4×H (rawRGB+hue), B sat, B val → 12 bytes
-const CONTROLLER_NOTIFICATION   = 15; // b leftPct, b rightPct, h leftAngle, h rightAngle → 6 bytes
+// Inner notification sub-types inside DEVICE_NOTIFICATION
+const MOTOR_NOTIFICATION        = 10;
+const COLOR_SENSOR_NOTIFICATION = 12;
+const CONTROLLER_NOTIFICATION   = 15;
 
-const MOTOR_STATE_READY = 0; // motorState value meaning "done"
+const MOTOR_STATE_READY = 0;
 
-// Motor bit masks
 const MOTOR_BITS_LEFT  = 1;
 const MOTOR_BITS_RIGHT = 2;
 const MOTOR_BITS_BOTH  = 3;
 
-// ── state ──────────────────────────────────────────────────────────────────────
+// productGroupDevice values from rpc_message.py
+const PGD_SINGLE_MOTOR = 512;
+const PGD_DOUBLE_MOTOR = 513;
+const PGD_COLOR_SENSOR = 514;
+const PGD_CONTROLLER   = 515;
 
-let _device = null;
-let _rx     = null;   // WRITE characteristic
-let _pending = null;  // one pending operation at a time
+const _PGD_TO_TYPE = {
+  512: 'singleMotor',
+  513: 'doubleMotor',
+  514: 'colorSensor',
+  515: 'controller',
+};
 
-let _lastColorVal    = -1;
-let _ctrlLeft        = 0;
-let _ctrlRight       = 0;
+// ── per-device connection table ───────────────────────────────────────────────
+// Each slot holds a device-state object or null.
 
-window._legoConnected = false;
-window._lastColor     = -1;
+const _conn = {
+  singleMotor: null,
+  doubleMotor: null,
+  colorSensor: null,
+  controller:  null,
+};
 
-// ── binary helpers ────────────────────────────────────────────────────────────
+function _makeDevState(rx, bleDevice) {
+  return {
+    rx,
+    bleDevice,
+    pending:     null,   // { ackType, motorMask, waitMotor, resolve, reject, timer }
+    infoResolve: null,   // used once during connect to capture INFO_RESPONSE
+    lastColor:   -1,
+    ctrlLeft:    0,
+    ctrlRight:   0,
+  };
+}
+
+// ── binary helpers ─────────────────────────────────────────────────────────────
 
 function _i8(n) {
   n = Math.max(-128, Math.min(127, Math.round(n)));
   return n < 0 ? n + 256 : n;
 }
-
 function _i32LE(n) {
   const v = new DataView(new ArrayBuffer(4));
   v.setInt32(0, Math.round(n), true);
   return [...new Uint8Array(v.buffer)];
 }
-
 function _u32LE(n) {
   const v = new DataView(new ArrayBuffer(4));
   v.setUint32(0, Math.max(0, Math.round(n)), true);
   return [...new Uint8Array(v.buffer)];
 }
-
 function _u16LE(n) {
   n = Math.max(0, Math.round(n));
   return [n & 0xFF, (n >> 8) & 0xFF];
@@ -73,233 +93,265 @@ function _u16LE(n) {
 
 // ── UI ─────────────────────────────────────────────────────────────────────────
 
-function _updateConnectBtn(connected) {
+function _updateConnectUI() {
   const btn = document.getElementById('connect-btn');
   if (!btn) return;
-  btn.textContent = connected ? '● Connected' : '○ Connect to LEGO';
-  btn.style.background = connected ? '#50fa7b' : '#bd93f9';
-  btn.style.color      = connected ? '#1e1f29' : '#f8f8f2';
+  const labels = [];
+  if (_conn.doubleMotor) labels.push('Motor ●');
+  if (_conn.singleMotor) labels.push('Single ●');
+  if (_conn.colorSensor) labels.push('Sensor ●');
+  if (_conn.controller)  labels.push('Controller ●');
+  if (labels.length === 0) {
+    btn.textContent = '○ Connect to LEGO';
+    btn.style.background = '#bd93f9';
+    btn.style.color = '#f8f8f2';
+  } else {
+    btn.textContent = '+ Connect  |  ' + labels.join('  ');
+    btn.style.background = '#50fa7b';
+    btn.style.color = '#1e1f29';
+  }
+  window._legoConnected = !!(
+    _conn.doubleMotor || _conn.singleMotor || _conn.colorSensor || _conn.controller
+  );
 }
 
-// ── connection ────────────────────────────────────────────────────────────────
+// ── notification handler (one per connected device) ───────────────────────────
+
+function _makeNotifyHandler(dev) {
+  return function(evt) {
+    const d  = new Uint8Array(evt.target.value.buffer);
+    const dv = new DataView(evt.target.value.buffer);
+    if (!d.length) return;
+    const msgType = d[0];
+
+    // INFO_RESPONSE (type 1) — 17 bytes: [1, rpcMaj, rpcMin, rpcBuild(2), fwMaj, fwMin,
+    //   fwBuild(2), blMaj, blMin, blBuild(2), maxPktSize(2), productGroupDevice(2)]
+    if (msgType === INFO_RESPONSE && dev.infoResolve) {
+      dev.infoResolve(d);
+      dev.infoResolve = null;
+      return;
+    }
+
+    // ACK (result) for a pending command — result type = command type + 1
+    if (dev.pending && !dev.pending.waitMotor && dev.pending.ackType === msgType) {
+      clearTimeout(dev.pending.timer);
+      const p = dev.pending; dev.pending = null;
+      p.resolve(d);
+      return;
+    }
+
+    if (msgType !== DEVICE_NOTIFICATION || d.length < 3) return;
+
+    let innerLen = d[1] | (d[2] << 8);
+    let offset   = 3;
+
+    while (innerLen > 0 && offset < d.length) {
+      const innerType = d[offset];
+      offset   += 1;
+      innerLen -= 1;
+
+      if (innerType === MOTOR_NOTIFICATION && offset + 12 <= d.length) {
+        const motorBitMask = d[offset];
+        const motorState   = d[offset + 1];
+        if (dev.pending?.waitMotor &&
+            motorState === MOTOR_STATE_READY &&
+            (motorBitMask & dev.pending.motorMask) !== 0) {
+          clearTimeout(dev.pending.timer);
+          const p = dev.pending; dev.pending = null;
+          p.resolve(d);
+        }
+        offset   += 12; innerLen -= 12;
+
+      } else if (innerType === COLOR_SENSOR_NOTIFICATION && offset + 12 <= d.length) {
+        dev.lastColor     = dv.getInt8(offset);
+        window._lastColor = dev.lastColor;
+        offset   += 12; innerLen -= 12;
+
+      } else if (innerType === CONTROLLER_NOTIFICATION && offset + 6 <= d.length) {
+        dev.ctrlLeft  = dv.getInt8(offset);
+        dev.ctrlRight = dv.getInt8(offset + 1);
+        offset   += 6; innerLen -= 6;
+
+      } else {
+        break;
+      }
+    }
+  };
+}
+
+// ── connection ─────────────────────────────────────────────────────────────────
+// Must be called from a user gesture (button click). Detects device type automatically.
 
 async function legoConnect() {
   if (!navigator.bluetooth) {
     throw new Error('Web Bluetooth not available — use Chrome or Edge');
   }
-  if (_device?.gatt?.connected) return;
 
-  _device = await navigator.bluetooth.requestDevice({
+  const bleDevice = await navigator.bluetooth.requestDevice({
     filters: [{ services: [SERVICE_UUID] }]
   });
 
-  _device.addEventListener('gattserverdisconnected', () => {
-    _device = null; _rx = null;
-    window._legoConnected = false;
-    _updateConnectBtn(false);
-    if (_pending) { _pending.reject(new Error('Device disconnected')); _pending = null; }
-  });
-
-  const server  = await _device.gatt.connect();
+  const server  = await bleDevice.gatt.connect();
   const service = await server.getPrimaryService(SERVICE_UUID);
-  _rx = await service.getCharacteristic(WRITE_UUID);
+  const rx = await service.getCharacteristic(WRITE_UUID);
   const tx = await service.getCharacteristic(NOTIFY_UUID);
 
+  const dev = _makeDevState(rx, bleDevice);
+
   await tx.startNotifications();
-  tx.addEventListener('characteristicvaluechanged', _onNotify);
+  tx.addEventListener('characteristicvaluechanged', _makeNotifyHandler(dev));
 
-  // Wake hub + start 50 ms periodic device notifications (gives motor-ready events)
-  await _rx.writeValueWithoutResponse(new Uint8Array([INFO_REQUEST]));
-  await _rx.writeValueWithoutResponse(new Uint8Array([DEVICE_NOTIFICATION_REQUEST, ..._u16LE(50)]));
+  // Send INFO_REQUEST and wait for INFO_RESPONSE to learn the device type
+  const infoPromise = new Promise(resolve => {
+    dev.infoResolve = resolve;
+    setTimeout(() => { dev.infoResolve = null; resolve(null); }, 3000);
+  });
+  await rx.writeValueWithoutResponse(new Uint8Array([INFO_REQUEST]));
+  const infoData = await infoPromise;
 
-  window._legoConnected = true;
-  _updateConnectBtn(true);
+  // productGroupDevice is at bytes 15-16 (little-endian uint16) in INFO_RESPONSE
+  let deviceType = 'unknown';
+  if (infoData && infoData.length >= 17) {
+    const pgd = infoData[15] | (infoData[16] << 8);
+    deviceType = _PGD_TO_TYPE[pgd] || 'unknown';
+  }
+
+  // Replace any prior connection of the same type
+  if (_conn[deviceType]?._device?.gatt?.connected) {
+    _conn[deviceType].bleDevice.gatt.disconnect();
+  }
+  if (deviceType !== 'unknown') {
+    _conn[deviceType] = dev;
+  }
+
+  bleDevice.addEventListener('gattserverdisconnected', () => {
+    for (const [type, d] of Object.entries(_conn)) {
+      if (d === dev) {
+        _conn[type] = null;
+        if (d.pending) { d.pending.reject(new Error('Device disconnected')); d.pending = null; }
+      }
+    }
+    _updateConnectUI();
+  });
+
+  // Start 50 ms periodic device notifications
+  await rx.writeValueWithoutResponse(new Uint8Array([DEVICE_NOTIFICATION_REQUEST, ..._u16LE(50)]));
+
+  _updateConnectUI();
+  return deviceType;
 }
 
 async function legoDisconnect() {
-  if (_device?.gatt?.connected) _device.gatt.disconnect();
-  _device = null; _rx = null;
-  window._legoConnected = false;
-  _updateConnectBtn(false);
-}
-
-// ── notification parser ───────────────────────────────────────────────────────
-
-function _onNotify(evt) {
-  const d  = new Uint8Array(evt.target.value.buffer);
-  const dv = new DataView(evt.target.value.buffer);
-  if (!d.length) return;
-
-  const msgType = d[0];
-
-  // ACK (result) for a sent command — result type is always command type + 1
-  if (_pending && !_pending.waitMotor && _pending.ackType === msgType) {
-    clearTimeout(_pending.timer);
-    const p = _pending; _pending = null;
-    p.resolve(d);
-    return;
+  for (const [type, dev] of Object.entries(_conn)) {
+    if (dev?.bleDevice?.gatt?.connected) dev.bleDevice.gatt.disconnect();
+    _conn[type] = null;
   }
+  _updateConnectUI();
+}
 
-  // DEVICE_NOTIFICATION (60): carries a sequence of inner sub-notifications
-  if (msgType !== DEVICE_NOTIFICATION || d.length < 3) return;
+// ── write helpers ──────────────────────────────────────────────────────────────
 
-  let innerLen = d[1] | (d[2] << 8);
-  let offset   = 3;
-
-  while (innerLen > 0 && offset < d.length) {
-    const innerType = d[offset];
-    offset   += 1;
-    innerLen -= 1;
-
-    if (innerType === MOTOR_NOTIFICATION && offset + 12 <= d.length) {
-      // B motorBitMask, B motorState, H absPos, h power, b speed, l position, b gesture
-      const motorBitMask = d[offset];
-      const motorState   = d[offset + 1];
-      if (_pending?.waitMotor &&
-          motorState === MOTOR_STATE_READY &&
-          (motorBitMask & _pending.motorMask) !== 0) {
-        clearTimeout(_pending.timer);
-        const p = _pending; _pending = null;
-        p.resolve(d);
-      }
-      offset   += 12;
-      innerLen -= 12;
-
-    } else if (innerType === COLOR_SENSOR_NOTIFICATION && offset + 12 <= d.length) {
-      // b color (signed: -1=none, 0-10=index), B reflection, 4×H, B, B
-      _lastColorVal     = dv.getInt8(offset);
-      window._lastColor = _lastColorVal;
-      offset   += 12;
-      innerLen -= 12;
-
-    } else if (innerType === CONTROLLER_NOTIFICATION && offset + 6 <= d.length) {
-      // b leftPct, b rightPct, h leftAngle, h rightAngle
-      _ctrlLeft  = dv.getInt8(offset);
-      _ctrlRight = dv.getInt8(offset + 1);
-      offset   += 6;
-      innerLen -= 6;
-
-    } else {
-      break; // unknown inner type — stop parsing
-    }
+function _getConn(type) {
+  const dev = _conn[type];
+  if (!dev) {
+    const label = { doubleMotor: 'Double motor', singleMotor: 'Single motor',
+                    colorSensor: 'Color sensor', controller: 'Controller' }[type] || type;
+    throw new Error(`${label} not connected — click "Connect to LEGO" and select the ${label.toLowerCase()} card`);
   }
+  return dev;
 }
 
-// ── write helpers ─────────────────────────────────────────────────────────────
-
-function _requireConn() {
-  if (!_rx) throw new Error('Not connected. Click "○ Connect to LEGO" before running hardware code.');
+async function _sendTo(dev, bytes) {
+  await dev.rx.writeValueWithoutResponse(new Uint8Array(bytes));
 }
 
-async function _send(bytes) {
-  _requireConn();
-  await _rx.writeValueWithoutResponse(new Uint8Array(bytes));
-}
-
-// Send and wait for ACK (result type = command type + 1)
-async function _sendAwait(bytes, timeoutMs = 5000) {
-  _requireConn();
+async function _sendAwaitOn(dev, bytes, timeoutMs = 5000) {
   const ackType = bytes[0] + 1;
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      if (_pending?.ackType === ackType) _pending = null;
-      resolve(null); // timeout is non-fatal
+      if (dev.pending?.ackType === ackType) dev.pending = null;
+      resolve(null);
     }, timeoutMs);
-    _pending = { ackType, motorMask: 0, waitMotor: false, resolve, reject, timer };
-    _rx.writeValueWithoutResponse(new Uint8Array(bytes)).catch(err => {
-      clearTimeout(timer); _pending = null; reject(err);
+    dev.pending = { ackType, motorMask: 0, waitMotor: false, resolve, reject, timer };
+    dev.rx.writeValueWithoutResponse(new Uint8Array(bytes)).catch(err => {
+      clearTimeout(timer); dev.pending = null; reject(err);
     });
   });
 }
 
-// Send a motor command that blocks until the hub sends MOTOR_STATE_READY
-async function _sendBlock(bytes, motorMask, timeoutMs = 30000) {
-  await _sendAwait(bytes); // wait for ACK (~100 ms)
+async function _sendBlockOn(dev, bytes, motorMask, timeoutMs = 30000) {
+  await _sendAwaitOn(dev, bytes);
   return new Promise(resolve => {
     const timer = setTimeout(() => {
-      if (_pending?.waitMotor) _pending = null;
+      if (dev.pending?.waitMotor) dev.pending = null;
       resolve(null);
     }, timeoutMs);
-    _pending = { ackType: -1, motorMask, waitMotor: true, resolve, reject: resolve, timer };
+    dev.pending = { ackType: -1, motorMask, waitMotor: true, resolve, reject: resolve, timer };
   });
 }
 
-// ── individual motor commands ─────────────────────────────────────────────────
+// ── individual motor commands (doubleMotor card) ───────────────────────────────
 
 async function motorSetSpeed(motorBitMask, speed) {
+  const dev = _getConn('doubleMotor');
   speed = Math.max(-100, Math.min(100, Math.round(speed)));
-  await _send([MOTOR_SET_SPEED_COMMAND, motorBitMask, _i8(speed)]);
+  await _sendTo(dev, [MOTOR_SET_SPEED_COMMAND, motorBitMask, _i8(speed)]);
 }
 
 async function motorRun(motorBitMask, direction) {
-  // direction: 0=clockwise, 1=counterclockwise
-  await _send([MOTOR_RUN_COMMAND, motorBitMask, direction]);
+  await _sendTo(_getConn('doubleMotor'), [MOTOR_RUN_COMMAND, motorBitMask, direction]);
 }
 
 async function motorRunForDegrees(motorBitMask, degrees, direction) {
-  await _sendBlock(
-    [MOTOR_RUN_FOR_DEGREES_COMMAND, motorBitMask, ..._i32LE(Math.abs(degrees)), direction],
-    motorBitMask
-  );
+  const dev = _getConn('doubleMotor');
+  await _sendBlockOn(dev, [MOTOR_RUN_FOR_DEGREES_COMMAND, motorBitMask, ..._i32LE(Math.abs(degrees)), direction], motorBitMask);
 }
 
 async function motorRunForTime(motorBitMask, timeMs, direction) {
-  await _sendBlock(
-    [MOTOR_RUN_FOR_TIME_COMMAND, motorBitMask, ..._u32LE(timeMs), direction],
-    motorBitMask,
-    timeMs + 5000
-  );
+  const dev = _getConn('doubleMotor');
+  await _sendBlockOn(dev, [MOTOR_RUN_FOR_TIME_COMMAND, motorBitMask, ..._u32LE(timeMs), direction], motorBitMask, timeMs + 5000);
 }
 
 async function motorStop(motorBitMask) {
-  await _send([MOTOR_STOP_COMMAND, motorBitMask]);
+  await _sendTo(_getConn('doubleMotor'), [MOTOR_STOP_COMMAND, motorBitMask]);
 }
 
-// ── coordinated movement commands (DoubleMotor) ───────────────────────────────
+// ── coordinated movement commands (doubleMotor card) ──────────────────────────
 
 async function movementSetSpeed(speed) {
+  const dev = _getConn('doubleMotor');
   speed = Math.max(-100, Math.min(100, Math.round(speed)));
-  await _send([MOVEMENT_SET_SPEED_COMMAND, _i8(speed)]);
+  await _sendTo(dev, [MOVEMENT_SET_SPEED_COMMAND, _i8(speed)]);
 }
 
 async function movementMove(direction) {
-  // direction: 0=forward, 1=backward (1 makes the car go "forward" per hw mounting)
-  await _send([MOVEMENT_MOVE_COMMAND, direction]);
+  await _sendTo(_getConn('doubleMotor'), [MOVEMENT_MOVE_COMMAND, direction]);
 }
 
-// degrees is signed int32; negative reverses within the given direction
 async function movementMoveForDegrees(degrees, direction) {
-  await _sendBlock(
-    [MOVEMENT_MOVE_FOR_DEGREES_COMMAND, ..._i32LE(degrees), direction],
-    MOTOR_BITS_BOTH
-  );
+  const dev = _getConn('doubleMotor');
+  await _sendBlockOn(dev, [MOVEMENT_MOVE_FOR_DEGREES_COMMAND, ..._i32LE(degrees), direction], MOTOR_BITS_BOTH);
 }
 
 async function movementMoveForTime(timeMs, direction) {
-  await _sendBlock(
-    [MOVEMENT_MOVE_FOR_TIME_COMMAND, ..._u32LE(timeMs), direction],
-    MOTOR_BITS_BOTH,
-    timeMs + 5000
-  );
+  const dev = _getConn('doubleMotor');
+  await _sendBlockOn(dev, [MOVEMENT_MOVE_FOR_TIME_COMMAND, ..._u32LE(timeMs), direction], MOTOR_BITS_BOTH, timeMs + 5000);
 }
 
 async function movementStop() {
-  await _send([MOVEMENT_STOP_COMMAND]);
+  await _sendTo(_getConn('doubleMotor'), [MOVEMENT_STOP_COMMAND]);
 }
 
 async function movementTurnForDegrees(degrees, direction) {
-  // direction: 2=left, 3=right
-  await _sendBlock(
-    [MOVEMENT_TURN_FOR_DEGREES_COMMAND, ..._i32LE(Math.abs(degrees)), direction],
-    MOTOR_BITS_BOTH
-  );
+  const dev = _getConn('doubleMotor');
+  await _sendBlockOn(dev, [MOVEMENT_TURN_FOR_DEGREES_COMMAND, ..._i32LE(Math.abs(degrees)), direction], MOTOR_BITS_BOTH);
 }
 
 // ── sensor / controller readers ───────────────────────────────────────────────
 
-function getLastColor()      { return window._lastColor; }
-function getControllerLeft() { return _ctrlLeft; }
-function getControllerRight(){ return _ctrlRight; }
+function getLastColor()       { return _conn.colorSensor?.lastColor ?? -1; }
+function getControllerLeft()  { return _conn.controller?.ctrlLeft ?? 0; }
+function getControllerRight() { return _conn.controller?.ctrlRight ?? 0; }
 
 // ── exports ───────────────────────────────────────────────────────────────────
 

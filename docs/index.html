@@ -1034,21 +1034,34 @@ class controller:
     initPyodide();
     runBtn.disabled = true;
 
+    // ── auto-await transform ───────────────────────────────────────────────────
+    // Adds 'await' before dm/sm method calls and wait() so students don't have to.
+    // Only transforms statement-level calls; does not touch cs.* or c.left_up() etc.
+    function addMissingAwaits(code) {
+      const re = /^(\s*(?:\w+\s*=\s*)?)(await\s+)?((?:dm|sm)\.\w+\s*\(|c\.drive\s*\(|wait\s*\()/gm;
+      return code.replace(re, (match, prefix, existingAwait, call) =>
+        existingAwait ? match : prefix + 'await ' + call
+      );
+    }
+
     // ── LEGO connect button ────────────────────────────────────────────────────
+    // Clicking always opens the picker — can be clicked once per card to add devices.
     async function handleConnect() {
       const output = document.getElementById('output');
-      if (window._legoConnected) {
-        await legoDisconnect();
-        output.textContent = 'Disconnected from LEGO hub.';
+      try {
+        output.textContent = 'Opening Bluetooth device picker…';
         output.className = '';
-      } else {
-        try {
-          output.textContent = 'Opening Bluetooth device picker…';
+        const deviceType = await legoConnect();
+        const label = { doubleMotor: 'Double Motor', singleMotor: 'Single Motor',
+                        colorSensor: 'Color Sensor', controller: 'Controller',
+                        unknown: 'Unknown device' }[deviceType] || deviceType;
+        output.textContent = `${label} connected! Write code and click ▶ Run.`;
+        output.className = 'success';
+      } catch (err) {
+        if (err.message && err.message.includes('User cancelled')) {
+          output.textContent = 'No device selected.';
           output.className = '';
-          await legoConnect();
-          output.textContent = 'Connected! Write code and click ▶ Run.';
-          output.className = 'success';
-        } catch (err) {
+        } else {
           output.textContent = 'Connection failed: ' + err.message;
           output.className = 'error';
         }
@@ -1072,7 +1085,7 @@ class controller:
 
       try {
         pyodide.runPython(`import sys, io; _buf = io.StringIO(); sys.stdout = _buf`);
-        await pyodide.runPythonAsync(code);
+        await pyodide.runPythonAsync(addMissingAwaits(code));
         const raw = pyodide.runPython(`sys.stdout = sys.__stdout__; _buf.getvalue()`);
         // Separate plot markers from display text
         let displayOut = '';
