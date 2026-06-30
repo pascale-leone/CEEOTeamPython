@@ -1,19 +1,23 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Easy Lego</title>
+  <title>EasyLego</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
   <!-- CodeMirror -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Pyodide (Python in the browser) -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
-
   <!-- LEGO Web Bluetooth layer -->
   <script src="lego_ble.js"></script>
 
@@ -40,8 +44,8 @@
     .CodeMirror {
       height: 300px;
       border-radius: 6px;
-      font-size: 14px;
-      font-family: monospace;
+      font-size: 16px;
+      font-family:monospace;
       line-height: 1.6;
     }
 
@@ -57,33 +61,87 @@
       cursor: pointer;
       letter-spacing: 0.05em;
     }
-    #run:hover  { background: #69ff94; }
-    #run:disabled { background: #44475a; color: #6272a4; cursor: not-allowed; }
+
+    #stop {
+      align-self: flex-start;
+      background: #f11717;
+      color: #1e1f29;
+      border: none;
+      padding: 8px 24px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+    }
+
+    #stopsign {
+      font-size: 18px;
+      line-height: 0;
+    }
 
     .tab-menu {
-      display: flex;
-      flex-direction: column;
-      background: #282a36;
-      padding: 20px 0 12px;
-      min-width: 180px;
+        display: flex;
+        flex-direction: column;
+        background: #282a36;
+        padding: 20px 0;
+        min-width: 180px;
+        gap: 4px;
     }
 
     .tab-button {
-      color: #f8f8f2;
-      font-family: verdana;
-      background: none;
-      border: none;
-      padding: 10px 20px;
-      text-align: left;
-      cursor: pointer;
-      font-size: 13px;
-      border-left: 3px solid transparent;
+        color: #f8f8f2;
+        font-family: verdana;
+        background: none;
+        border: none;
+        padding: 10px 20px;
+        text-align: left;
+        cursor: pointer;
+        font-size: 15px;
+        border-left: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+     }
+    .button-img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
-    .tab-button:hover  { background: #44475a; }
-    .tab-button.active { border-left: 3px solid #50fa7b; color: #50fa7b; background: #44475a; }
+
+    .tab-button:hover {
+        background: #44475a;
+    }
+    .tab-button.active {
+        border-left: 3px solid #50fa7b;
+        color: #50fa7b;
+        background: #44475a;
+    }
+
+    .tabcontent{
+        color: white;
+        font-family: verdana;
+    }
+    .tab-content-area {
+        flex: 1;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow-y: auto;
+        font-family: verdana;
+
+    }
+
+    #run:hover    { background: #70fc98; }
+    #run:disabled { background: #44475a; color: #6272a4; cursor: not-allowed; }
+
+    #stop:hover { background: #ff8069; }
 
     #connect-btn {
-      margin: auto 14px 0;
+      margin: 10px 14px 14px;
       background: #bd93f9;
       color: #1e1f29;
       border: none;
@@ -97,18 +155,6 @@
     }
     #connect-btn:hover { opacity: 0.85; }
 
-    .tabcontent { color: white; font-family: verdana; }
-
-    .tab-content-area {
-      flex: 1;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      overflow-y: auto;
-      font-family: verdana;
-    }
-
     #output {
       background: #282a36;
       color: #f8f8f2;
@@ -120,289 +166,773 @@
       white-space: pre-wrap;
       border-left: 3px solid #6272a4;
     }
-    #output.error   { border-left-color: #ff5555; color: #ff5555; }
-    #output.success { border-left-color: #50fa7b; }
 
     pre {
-      background-color: #f4f4f4;
-      border: 1px solid #ddd;
-      color: #333;
-      page-break-inside: avoid;
-      font-family: monospace;
-      font-size: 15px;
-      line-height: 1.6;
-      margin-bottom: 1.6em;
-      max-width: 100%;
-      overflow: auto;
-      padding: 1em;
-      display: block;
-      word-wrap: break-word;
+        background-color: #f4f4f4;
+        border: 1px solid #ddd;
+        color: #333;
+        page-break-inside: avoid;
+        font-family: monospace;
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 1.6em;
+        max-width: 100%;
+        overflow: auto;
+        padding: 1em 1em;
+        display: block;
+        word-wrap: break-word;
     }
 
     .tbl {
-      background-color: #f4f4f4;
-      border: 1px solid #ddd;
-      color: #333;
-      font-family: monospace;
-      font-size: 15px;
-      line-height: 1.6;
-      margin-bottom: 0.5em;
-      margin-left: 0.5em;
-      text-align: left;
-      max-width: 100%;
-      overflow: auto;
-      padding: 0.5em;
-      display: block;
-      word-wrap: break-word;
+        background-color: #f4f4f4;
+        border: 1px solid #ddd;
+        color: #333;
+        page-break-inside: avoid;
+        font-family: monospace;
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 0.5em;
+        margin-left: 0.5em;
+        text-align: left;
+        max-width: 100%;
+        overflow: auto;
+        padding: 0.5em 0.5em;
+        display: block;
+        word-wrap: break-word;
+    }
+    /* Target each letter sequentially and apply colors */
+    .multicolor-word span:nth-child(7n+1) { color: #ff0000; } /* Red */
+    .multicolor-word span:nth-child(7n+2) { color: #ff7f00; } /* Orange */
+    .multicolor-word span:nth-child(7n+3) { color: #ffff00; } /* Yellow */
+    .multicolor-word span:nth-child(7n+4) { color: #00ff00; } /* Green */
+    .multicolor-word span:nth-child(7n+5) { color: #87CEFA; } /* Blue */
+
+
+    #output.error { border-left-color: #ff5555; color: #ff5555; }
+    #output.success { border-left-color: #50fa7b; }
+
+    .image-container {
+                padding: 20px;
+                text-align: left;
+                flex-grow: 1; /* Allows expansion */
+                align-items: center;
+            }
+    #legocar {
+      width: 500px;
+      height: 500px;
+      object-fit: contain;
+
     }
 
-    .multicolor-word span:nth-child(7n+1) { color: #ff0000; }
-    .multicolor-word span:nth-child(7n+2) { color: #ff7f00; }
-    .multicolor-word span:nth-child(7n+3) { color: #ffff00; }
-    .multicolor-word span:nth-child(7n+4) { color: #00ff00; }
-    .multicolor-word span:nth-child(7n+5) { color: #87CEFA; }
-
-    .note {
+    /* ── Tutor side panel ─────────────────────────────── */
+    #open-tutor {
       background: #44475a;
-      border-left: 3px solid #bd93f9;
-      border-radius: 4px;
-      padding: 10px 14px;
-      font-size: 13px;
       color: #f8f8f2;
+      border: 1px solid #6272a4;
+      display: flex;
+      padding: 3px 14px;
+      border-radius: 6px;
+      cursor: pointer;
       font-family: verdana;
+      font-size: 0.85rem;
+      align-self: flex-start;
+    }
+    #open-tutor:hover { background: #6272a4; }
+
+    #close-tutor {
+      background: #44475a;
+      color: #f8f8f2;
+      border: 1px solid #6272a4;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: verdana;
+      font-size: 0.85rem;
+      display: none;
+      align-self: flex-end;
+      margin-bottom:8px;
+    }
+    #close-tutor:hover { background: #6272a4; }
+
+    #tutor-side-panel {
+      flex-direction: column;
+      width: 300px;
+      flex-shrink: 0;
+      background: #282a36;
+      border-radius: 8px;
+      padding: 16px;
+      border-left: 3px solid #50fa7b;
+      gap: 0;
+      display: none;
+    }
+
+    #chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+    #chat-clear-btn {
+      background: #44475a;
+      color: #f8f8f2;
+      border: 1px solid #6272a4;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: verdana;
+      font-size: 0.85rem;
+    }
+    #chat-clear-btn:hover { background: #6272a4; }
+    #chat-container {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 4px 0 12px;
+      min-height: 0;
+    }
+    .chat-message { display: flex; flex-direction: column; max-width: 82%; }
+    .chat-message.user  { align-self: flex-end;  align-items: flex-end; }
+    .chat-message.assistant { align-self: flex-start; align-items: flex-start; }
+    .chat-label {
+      font-size: 0.72rem;
+      color: #6272a4;
+      margin-bottom: 3px;
+      padding: 0 4px;
+      font-family: verdana;
+    }
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 16px;
+      line-height: 1.55;
+      font-size: 0.93rem;
+      word-break: break-word;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .chat-message.user .chat-bubble {
+      background: #50fa7b;
+      color: #1e1f29;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-message.assistant .chat-bubble {
+      background: #282a36;
+      color: #f8f8f2;
+      border: 1px solid #44475a;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-message.assistant .chat-bubble p { margin: 0 0 0.5em; }
+    .chat-message.assistant .chat-bubble p:last-child { margin-bottom: 0; }
+    .chat-message.assistant .chat-bubble pre {
+      background: #1e1f29;
+      border: 1px solid #6272a4;
+      border-radius: 6px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      margin: 8px 0;
+    }
+    .chat-message.assistant .chat-bubble code {
+      font-family: monospace;
+      font-size: 0.88em;
+      color: rgb(235, 235, 235);
+      background: #44475a;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .chat-message.assistant .chat-bubble pre code { background: none; padding: 0; }
+    .chat-message.assistant .chat-bubble ul,
+    .chat-message.assistant .chat-bubble ol { padding-left: 1.3em; margin: 6px 0; }
+    .chat-typing .chat-bubble {
+      display: flex; align-items: center; gap: 5px; padding: 12px 16px;
+    }
+    .chat-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #6272a4;
+      animation: chatBounce 1.1s infinite;
+    }
+    .chat-dot:nth-child(2) { animation-delay: 0.18s; }
+    .chat-dot:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes chatBounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40%           { transform: translateY(-5px); }
+    }
+    #chat-welcome {
+      padding: 40px 0 16px;
+      color: #6272a4;
+      font-family: verdana;
+    }
+    #chat-welcome h3 { color: #f8f8f2; margin: 0 0 8px; }
+    #chat-welcome p  { font-size: 0.9rem; line-height: 1.5; margin: 0 0 16px; }
+    #chat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chat-chip {
+      background: #282a36;
+      border: 1px solid #44475a;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.83rem;
+      color: #8be9fd;
+      cursor: pointer;
+      font-family: verdana;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .chat-chip:hover { background: #44475a; border-color: #6272a4; }
+    #chat-input-bar {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0 0;
+      border-top: 1px solid #44475a;
+      margin-top: 8px;
+      flex-shrink: 0;
+    }
+    #chat-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #44475a;
+      border-radius: 24px;
+      font-size: 0.95rem;
+      outline: none;
+      resize: none;
+      background: #282a36;
+      color: #f8f8f2;
+      line-height: 1.4;
+      max-height: 120px;
+      overflow-y: auto;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #chat-input:focus { border-color: #50fa7b; }
+    #chat-send-btn {
+      background: #50fa7b;
+      color: #1e1f29;
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      align-self: flex-end;
+      font-weight: bold;
+    }
+    #chat-send-btn:hover    { background: #70fc98; }
+    #chat-send-btn:disabled { background: #44475a; color: #6272a4; cursor: default; }
+
+    /* ── Plot panel ───────────────────────────────────────── */
+    .plot-panel {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      width: 300px;
+      flex-shrink: 0;
+      background: #282a36;
+      border-radius: 8px;
+      padding: 16px;
+      border-left: 3px solid #bd93f9;
+    }
+    .plot-panel h2 { margin: 0; font-size: 1rem; color: #bd93f9; }
+    .plot-panel canvas { width: 100% !important; }
+
+    /* Autocomplete hint dropdown — Dracula-matched */
+    .CodeMirror-hints {
+      background: #282a36;
+      border: 1px solid #44475a;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      font-family: monospace;
+      font-size: 14px;
+      padding: 4px 0;
+      z-index: 9999;
+    }
+    .CodeMirror-hint {
+      color: #f8f8f2;
+      padding: 4px 14px;
+      cursor: pointer;
+    }
+    .CodeMirror-hint-active {
+      background: #44475a;
+      color: #50fa7b;
+    }
+    .cm-hint-sig {
+      color: #6272a4;
+      font-size: 12px;
+      margin-left: 8px;
     }
   </style>
 </head>
 <body>
 
   <div class="tab-menu">
-    <button class="tab-button active" onclick="switchTab(event,'tab1')" id="defaultOpen">Code</button>
-    <button class="tab-button" onclick="switchTab(event,'tab2')">Single Motor</button>
-    <button class="tab-button" onclick="switchTab(event,'tab3')">Double Motor</button>
-    <button class="tab-button" onclick="switchTab(event,'tab4')">Controller</button>
-    <button class="tab-button" onclick="switchTab(event,'tab5')">Color Sensor</button>
-    <button class="tab-button" onclick="switchTab(event,'tab6')">Python Tips</button>
+    <button class="tab-button active" onclick="switchTab(event, 'tab1')" id="defaultOpen"><strong>Code</strong></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab2')"><strong>Single Motor Functions</strong><img class="button-img" id="sm" src="images/sm.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab3')"><strong>Double Motor Functions</strong><img class="button-img" id="dm" src="images/dm.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab4')"><strong>Controller Functions</strong><img class="button-img" id="c" src="images/c.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab5')"><strong>Color Sensor Functions</strong><img class="button-img" id="cs" src="images/cs.png"></button>
+    <button class="tab-button" onclick="switchTab(event, 'tab6')"><strong>General Python tips!</strong></button>
     <button id="connect-btn" onclick="handleConnect()">○ Connect to LEGO</button>
+    </div>
+    <!-- Tab content -->
+    <div class="tab-content-area">
+    <div id="tab1" class="tabcontent">
+        <h2>Welcome to Python LEGO Robotics!</h2>
+        <textarea id="code"></textarea>
+<!-- <span class="multicolor-word">
+          <span>c</span><span>o</span><span>l</span><span>o</span><span>r</span>
+         and  -->
+        <button id="run">▶ Run</button>
+        <button id="stop"><span id="stopsign">⬣</span> Stop</button>
+        <div id="output">Loading Python engine, please wait…</div>
+        <h3>Getting started...</h3>
+        <p>Make sure to use the <strong>number</strong> on your card!</p>
+        <table>
+          <tr>
+            <th>What are you using?</th>
+            <th>code</th>
+          </tr>
+          <tr>
+            <th>Single Motor</th>
+            <th><pre class="tbl">
+              <code>
+sm = singleMotor()
+sm.connect(card_serial="1234")
+            </code></pre></th>
+          </tr>
+          <tr>
+            <th>Double Motor</th>
+            <th><pre class="tbl">
+              <code>
+dm = doubleMotor()
+dm.connect(card_serial="1234")
+            </code></pre></th>
+          </tr>
+          <tr>
+            <th>Controller</th>
+            <th><pre class="tbl">
+              <code>
+c = controller()
+c.connect(card_serial="1234")
+            </code></pre></th>
+          </tr>
+          <tr>
+            <th>Color Sensor</th>
+            <th><pre class="tbl">
+              <code>
+cs = colorSensor()
+cs.connect(card_serial="1234")
+            </code></pre></th>
+          </tr>
+        </table>
+        <h3>Try driving!</h3>
+        <pre><code>
+dm = doubleMotor()
+dm.connect(card_serial="1234")
+
+c = controller()
+c.connect(card_serial="1234")
+
+c.drive(dm)
+        </code></pre>
+    </div>
+    
+    <div id="tab2" class="tabcontent">
+        <h3>Single Motor Functions</h3>
+        <p>Define a single motor (always do this first!) <pre><code>sm = singleMotor()</code></pre> </p>
+        <p>Connect to the single motor<pre><code>sm.connect(card_serial='1234')</code></pre></p>
+        <p>Spin the motor this many times! <pre><code>sm.spin(rotations)</code></pre></p>
+        <p>Stop the motor<pre><code>sm.stop()</code></pre></p>
+        <p>Set the motor speed<pre><code>sm.set_speed(speed)</code></pre></p>
+        <p>Run the motor<pre><code>sm.run()</code></pre></p>
+        <p>See a plot of the motor's position<pre><code>sm.plot()</code></pre></p>
+           
+    </div>
+    
+    <div id="tab3" class="tabcontent">
+        <h3>Double Motor Functions</h3>
+        <p>Define a double motor (always do this first!) <pre><code>dm = doubleMotor()</code></pre> </p>
+        <p>Connect to the double motor <pre><code>dm.connect(card_serial='1234')</code></pre></p>
+        <p>Run the motors <pre><code>dm.run()</code></pre></p>
+        <p>Run the motors for this many milliseconds <pre><code>dm.run_time(time)</code></pre></p>
+        <p>Run the left motor (<em>Try adding a number inside of the parenthesis! What happens?</em>)<pre><code>dm.run_left()</code></pre></p>
+        <p>Run the right motor (<em>Try adding a number inside of the parenthesis! What happens?</em>)<pre><code>dm.run_right()</code></pre></p>
+        <p>Set the motor speed <pre><code>dm.set_speed(speed)</code></pre></p>
+        <p>Set the left motor speed <pre><code>dm.set_speed_left(speed)</code></pre></p>
+        <p>Set the right motor speed<pre><code>dm.set_speed_right(speed)</code></pre></p>
+        <p>Stop the motors<pre><code>dm.stop()</code></pre></p>
+        <p>See a plot of the left motor's position<pre><code>dm.plot_left()</code></pre></p>
+        <p>See a plot of the right motor's position<pre><code>dm.plot_right()</code></pre></p>
+        
+        <div class="image-container" style="display:flex;align-items:center;gap:16px;">
+          <h4 style="margin:0;">Did you build a car?</h4>
+          <img id="legocar" src="images/legocar.png">
+        </div>
+        <p>Move this many steps!<pre><code>dm.move_steps(1)</code></pre></p>
+        <p>Turn left by this many degrees<pre><code>dm.turn_left(degrees)</code></pre></p>
+        <p>Turn right by this many degrees<pre><code>dm.turn_right(degrees)</code></pre></p>
+    </div>
+    <div id="tab4" class="tabcontent">
+        <h3>Controller Functions</h3>
+        <p>Define a controller (always do this first!) <pre><code>c = controller()</code></pre> </p>
+        <p>Connect to the controller<pre><code>c.connect(card_serial="1234")</code></pre></p>
+        <p>Control the double motor for 10 seconds using the controller sticks<pre><code>c.drive(dm)</code></pre></p>
+        <p>Return True if left stick is up<pre><code>c.left_up()</code></pre></p>
+        <p>Return True if left stick is down<pre><code>c.left_down()</code></pre></p>
+        <p>Return True if left stick is released<pre><code>c.left_released()</code></pre></p>
+        <p>Return True if right stick is up<pre><code>c.right_up()</code></pre></p>
+        <p>Return True if right stick is down<pre><code>c.right_down()</code></pre></p>
+        <p>Return True if right stick is released<pre><code>c.right_released()</code></pre></p>
+    </div>
+    <div id="tab5" class="tabcontent">
+        <h3>Color Sensor Function</h3>
+        <p>Define a color sensor (always do this first!) <pre><code>cs = colorSensor()</code></pre> </p>
+        <p>Connect to the color sensor<pre><code>cs.connect(card_serial="1234")</code></pre></p>
+        <p>Return the detected color<pre><code>cs.detect_color()</code></pre></p>
+    </div>
+    <div id="tab6" class="tabcontent">
+        <h3>General Python tips!</h3>
+        <p>if statements - use these to make decisions in your code<br>
+
+            <em>Example:</em> Green means go!<br>
+            <pre><code>
+if cs.detect_color() == 'green':
+    print('The color is green!')
+    dm.run()
+            </code></pre>
+            
+            
+            <br>
+            for loops - use these to repeat code a certain number of times<br>
+        
+            <em>Example:</em> Spin 5 times!<br>
+            <pre><code>
+for i in range(5):
+    sm.spin()
+            </code></pre>
+            
+            <br>
+            while loops - use these to repeat code until a condition is met <br>
+            <em>Example:</em> Spin until we see red!<br>
+            <pre><code>
+while cs.detect_color() != 'red':
+    sm.spin()
+            </code></pre>
+            </p>
+
+            <br>
+            variable - use these to store information <br>
+            <em>Example:</em> Store the color the sensor saw!<br>
+            <pre><code>
+color = cs.detect_color()
+            </code></pre>
+            </p>
+    </div>
+
+</div>
+
+  <!-- Tutor side panel: persistent chat alongside the code tab -->
+  <button id="open-tutor" onclick="toggleTutorPanel()">Ask the Tutor</button>
+  <div id="tutor-side-panel">
+   <button id="close-tutor" onclick="toggleTutorPanel()">Close the Tutor</button>
+    <div id="chat-header">
+      <h2>Ask the Tutor</h2>
+      <button id="chat-clear-btn" onclick="clearChat()">New Chat</button>
+    </div>
+    <div id="chat-container"></div>
+    <div id="chat-welcome">
+      <h3>Hi! I'm your Python tutor 👋</h3>
+      <p>Ask me anything about LEGO robotics or Python. I'm here to help you learn!</p>
+      <div id="chat-chips">
+        <button class="chat-chip" onclick="sendChip(this)">How do I make a car move forward?</button>
+        <button class="chat-chip" onclick="sendChip(this)">What's a for loop?</button>
+        <button class="chat-chip" onclick="sendChip(this)">How do I detect colors?</button>
+        <button class="chat-chip" onclick="sendChip(this)">How do I use the controller?</button>
+      </div>
+    </div>
+    <div id="chat-input-bar">
+      <textarea id="chat-input" placeholder="Ask a question..." rows="1"></textarea>
+      <button id="chat-send-btn" onclick="sendMessage()">&#9658;</button>
+    </div>
   </div>
 
-  <div class="tab-content-area">
-
-    <!-- Tab 1: Code editor -->
-    <div id="tab1" class="tabcontent">
-      <h2>Welcome to Python Lego Robotics!</h2>
-
-      <div class="note">
-        <strong>Getting started:</strong> Click <strong>○ Connect to LEGO</strong> in the sidebar, then select your hub.
-        Use <strong>Chrome</strong> or <strong>Edge</strong> — other browsers don't support hardware connection.
-      </div>
-
-      <textarea id="code"></textarea>
-      <button id="run" disabled>▶ Run</button>
-      <div id="output">Loading Python engine, please wait…</div>
-
-      <h3>Connect your device</h3>
-      <p>Use the <span class="multicolor-word"><span>c</span><span>o</span><span>l</span><span>o</span><span>r</span></span> on your card to set the right color constant:</p>
-      <table>
-        <tr><th>Device</th><th>Setup code</th></tr>
-        <tr>
-          <th>Single Motor</th>
-          <th><pre class="tbl"><code>sm = singleMotor()
-sm.connect(card_color=orange, card_serial="1234")</code></pre></th>
-        </tr>
-        <tr>
-          <th>Double Motor</th>
-          <th><pre class="tbl"><code>dm = doubleMotor()
-dm.connect(card_color=orange, card_serial="1234")</code></pre></th>
-        </tr>
-        <tr>
-          <th>Controller</th>
-          <th><pre class="tbl"><code>c = controller()
-c.connect(card_color=orange, card_serial="1234")</code></pre></th>
-        </tr>
-        <tr>
-          <th>Color Sensor</th>
-          <th><pre class="tbl"><code>cs = colorSensor()
-cs.connect(card_color=orange, card_serial="1234")</code></pre></th>
-        </tr>
-      </table>
-
-      <h3>Try driving!</h3>
-      <pre><code>dm = doubleMotor()
-dm.connect(card_color=orange, card_serial="1234")
-
-await dm.move_steps(3)
-await dm.turn_right(90)
-await dm.move_steps(3)
-await dm.stop()</code></pre>
+  <!-- Plot panels: sit outside tab-content-area so they persist across tab switches -->
+  <div id="plot-column" style="display:flex;flex-direction:column;gap:10px;flex-shrink:0;">
+    <div id="plot-panel-dm-left" class="plot-panel">
+      <h2>Left Motor Position</h2>
+      <canvas id="plot-canvas-dm-left"></canvas>
     </div>
-
-    <!-- Tab 2: Single Motor -->
-    <div id="tab2" class="tabcontent">
-      <h3>Single Motor Functions</h3>
-      <div class="note">Add <code>await</code> before hardware calls so each command finishes before the next one starts.</div>
-      <p>Connect to the motor<pre><code>sm.connect(card_color=color, card_serial='1234')</code></pre></p>
-      <p>Spin the motor this many rotations<pre><code>await sm.spin(rotations)</code></pre></p>
-      <p>Stop the motor<pre><code>await sm.stop()</code></pre></p>
-      <p>Set the motor speed (1–100)<pre><code>sm.set_speed(speed)</code></pre></p>
-      <p>Run the motor continuously<pre><code>await sm.run()</code></pre></p>
+    <div id="plot-panel-dm-right" class="plot-panel">
+      <h2>Right Motor Position</h2>
+      <canvas id="plot-canvas-dm-right"></canvas>
     </div>
-
-    <!-- Tab 3: Double Motor -->
-    <div id="tab3" class="tabcontent">
-      <h3>Double Motor Functions</h3>
-      <div class="note">Add <code>await</code> before hardware calls so each command finishes before the next one starts.</div>
-      <p>Connect to the motors<pre><code>dm.connect(card_color=color, card_serial='1234')</code></pre></p>
-      <p>Move this many steps (1 step = 180°)<pre><code>await dm.move_steps(1)</code></pre></p>
-      <p>Run the motors continuously<pre><code>await dm.run()</code></pre></p>
-      <p>Run for this many milliseconds<pre><code>await dm.run_time(milliseconds)</code></pre></p>
-      <p>Run the left motor<pre><code>await dm.run_left()</code></pre></p>
-      <p>Run the right motor<pre><code>await dm.run_right()</code></pre></p>
-      <p>Turn left by this many degrees<pre><code>await dm.turn_left(degrees)</code></pre></p>
-      <p>Turn right by this many degrees<pre><code>await dm.turn_right(degrees)</code></pre></p>
-      <p>Set the speed of both motors (1–100)<pre><code>dm.set_speed(speed)</code></pre></p>
-      <p>Stop the motors<pre><code>await dm.stop()</code></pre></p>
+    <div id="plot-panel-sm" class="plot-panel">
+      <h2>Motor Position</h2>
+      <canvas id="plot-canvas-sm"></canvas>
     </div>
-
-    <!-- Tab 4: Controller -->
-    <div id="tab4" class="tabcontent">
-      <h3>Controller Functions</h3>
-      <div class="note">Add <code>await</code> before hardware calls so each command finishes before the next one starts.</div>
-      <p>Connect to the controller<pre><code>c.connect()</code></pre></p>
-      <p>Drive the double motor with the controller sticks for 10 seconds<pre><code>await c.drive(dm)</code></pre></p>
-      <p>Return True if left stick is pushed up<pre><code>c.left_up()</code></pre></p>
-      <p>Return True if left stick is pushed down<pre><code>c.left_down()</code></pre></p>
-      <p>Return True if left stick is released<pre><code>c.left_released()</code></pre></p>
-      <p>Return True if right stick is pushed up<pre><code>c.right_up()</code></pre></p>
-      <p>Return True if right stick is pushed down<pre><code>c.right_down()</code></pre></p>
-      <p>Return True if right stick is released<pre><code>c.right_released()</code></pre></p>
-    </div>
-
-    <!-- Tab 5: Color Sensor -->
-    <div id="tab5" class="tabcontent">
-      <h3>Color Sensor Functions</h3>
-      <p>Connect to the color sensor<pre><code>cs.connect(card_color=color, card_serial='1234')</code></pre></p>
-      <p>Return the detected color as a string<pre><code>cs.detect_color()</code></pre></p>
-    </div>
-
-    <!-- Tab 6: Python Tips -->
-    <div id="tab6" class="tabcontent">
-      <h3>General Python Tips!</h3>
-
-      <p><strong>Wait between commands</strong> — pause for a number of seconds:<br>
-      <pre><code>await wait(2)</code></pre></p>
-
-      <p><strong>if statements</strong> — make decisions:<br>
-      Example: Green means go!<br>
-      <pre><code>if cs.detect_color() == 'Green':
-    print('The color is green!')
-    await dm.run()</code></pre></p>
-
-      <p><strong>for loops</strong> — repeat a set number of times:<br>
-      Example: Move 5 steps!<br>
-      <pre><code>for i in range(5):
-    await dm.move_steps(1)
-    await wait(0.5)</code></pre></p>
-
-      <p><strong>while loops</strong> — repeat until a condition is met:<br>
-      Example: Drive until we see red!<br>
-      <pre><code>while cs.detect_color() != 'Red':
-    await dm.run()
-await dm.stop()</code></pre></p>
-    </div>
-
-  </div><!-- end tab-content-area -->
+  </div>
 
   <script>
-    // ── Python shims (run inside Pyodide) ──────────────────────────────────────
+    document.getElementById("defaultOpen").click();
+
+    // ── LEGO class autocomplete ────────────────────────────────────────────────
+
+    const CLASS_METHODS = {
+      doubleMotor: [
+        { name: "connect",         sig: "(card_serial)" },
+        { name: "move_steps",      sig: "(step=1)" },
+        { name: "run",             sig: "()" },
+        { name: "run_time",        sig: "(time=2000)" },
+        { name: "run_left",        sig: "(degrees=None)" },
+        { name: "run_right",       sig: "(degrees=None)" },
+        { name: "turn_left",       sig: "(degrees=90)" },
+        { name: "turn_right",      sig: "(degrees=90)" },
+        { name: "set_speed",       sig: "(speed)" },
+        { name: "set_speed_left",  sig: "(speed)" },
+        { name: "set_speed_right", sig: "(speed)" },
+        { name: "stop",            sig: "()" },
+        { name: "plot_left",       sig: "()" },
+        { name: "plot_right",      sig: "()" },
+      ],
+      singleMotor: [
+        { name: "connect",   sig: "(card_serial)" },
+        { name: "spin",      sig: "(rotations=1)" },
+        { name: "stop",      sig: "()" },
+        { name: "set_speed", sig: "(speed)" },
+        { name: "run",       sig: "()" },
+        { name: "plot",      sig: "()" },
+      ],
+      colorSensor: [
+        { name: "connect",      sig: "(card_serial)" },
+        { name: "detect_color", sig: "()" },
+      ],
+      controller: [
+        { name: "connect",        sig: "(card_serial)" },
+        { name: "left_up",        sig: "()" },
+        { name: "left_down",      sig: "()" },
+        { name: "left_released",  sig: "()" },
+        { name: "right_up",       sig: "()" },
+        { name: "right_down",     sig: "()" },
+        { name: "right_released", sig: "()" },
+        { name: "left_position",  sig: "()" },
+        { name: "right_position", sig: "()" },
+        { name: "drive",          sig: "(dm, t=100)" },
+      ],
+    };
+
+    function buildVarMap(code) {
+      const pattern = /^([A-Za-z_]\w*)\s*=\s*(doubleMotor|singleMotor|colorSensor|controller)\s*\(/gm;
+      const map = {};
+      let match;
+      while ((match = pattern.exec(code)) !== null) {
+        map[match[1]] = match[2];
+      }
+      return map;
+    }
+
+    function legoHint(cm) {
+      const cursor = cm.getCursor();
+      const before = cm.getLine(cursor.line).slice(0, cursor.ch);
+      const dotMatch = before.match(/([A-Za-z_]\w*)\.([\w]*)$/);
+      if (!dotMatch) return null;
+      const varName = dotMatch[1], typed = dotMatch[2];
+      const className = buildVarMap(cm.getValue())[varName];
+      if (!className) return null;
+      const filtered = (CLASS_METHODS[className] || []).filter(m => m.name.startsWith(typed));
+      if (!filtered.length) return null;
+      return {
+        list: filtered.map(m => ({
+          text: m.name + "()",
+          render(el) {
+            el.innerHTML = `<span>${m.name}</span><span class="cm-hint-sig">${m.sig}</span>`;
+          },
+          hint(cm, data, completion) {
+            cm.replaceRange(m.name + "()", data.from, data.to);
+            if (m.sig !== "()") {
+              const cur = cm.getCursor();
+              cm.setCursor({ line: cur.line, ch: cur.ch - 1 });
+            }
+          }
+        })),
+        from: CodeMirror.Pos(cursor.line, cursor.ch - typed.length),
+        to:   CodeMirror.Pos(cursor.line, cursor.ch)
+      };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+      mode: "python",
+      theme: "dracula",
+      lineNumbers: true,
+      indentUnit: 4,
+      tabSize: 4,
+      indentWithTabs: false,
+      extraKeys: {
+        "Tab": cm => cm.execCommand("indentMore"),
+        "Shift-Tab": cm => cm.execCommand("indentLess"),
+        "Ctrl-Space": cm => CodeMirror.showHint(cm, legoHint, { completeSingle: false })
+      }
+    });
+
+    editor.on("inputRead", (cm, change) => {
+      if (change.text[0] === ".") {
+        CodeMirror.showHint(cm, legoHint, { completeSingle: false });
+      }
+    });
+
+    const plotCharts = {};
+    const CHANNEL_CONFIG = {
+      "dm_left":  { panelId: "plot-panel-dm-left",  canvasId: "plot-canvas-dm-left" },
+      "dm_right": { panelId: "plot-panel-dm-right", canvasId: "plot-canvas-dm-right" },
+      "sm":       { panelId: "plot-panel-sm",        canvasId: "plot-canvas-sm" },
+    };
+
+    function initPlot(channel) {
+      const cfg = CHANNEL_CONFIG[channel];
+      if (!cfg || plotCharts[channel]) return;
+      document.getElementById(cfg.panelId).style.display = "flex";
+      const ctx = document.getElementById(cfg.canvasId).getContext("2d");
+      plotCharts[channel] = new Chart(ctx, {
+        type: "line",
+        data: {
+          datasets: [{
+            label: "Position (°)",
+            data: [],
+            borderColor: "#bd93f9",
+            backgroundColor: "rgba(189,147,249,0.1)",
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.1
+          }]
+        },
+        options: {
+          animation: false,
+          scales: {
+            x: { type: "linear", title: { display: false }, ticks: { color: "#6272a4" }, grid: { color: "#44475a" } },
+            y: { min: -10, max: 400, title: { display: false }, ticks: { color: "#6272a4" }, grid: { color: "#44475a" } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function addPlotPoint(channel, x, y) {
+      if (!plotCharts[channel]) initPlot(channel);
+      const chart = plotCharts[channel];
+      if (!chart) return;
+      const data = chart.data.datasets[0].data;
+      data.push({ x, y });
+      if (data.length > 200) data.shift();
+      chart.update("none");
+    }
+
+    function destroyPlot() {
+      for (const [channel, chart] of Object.entries(plotCharts)) {
+        const cfg = CHANNEL_CONFIG[channel];
+        if (cfg) document.getElementById(cfg.panelId).style.display = "none";
+        chart.destroy();
+        delete plotCharts[channel];
+      }
+    }
+
+    function toggleTutorPanel() {
+      if (document.getElementById("tutor-side-panel").style.display !== "none") {
+        document.getElementById("tutor-side-panel").style.display = "none";
+        document.getElementById("close-tutor").style.display = "none";
+        document.getElementById("open-tutor").style.display = "flex";
+      } else {
+        document.getElementById("tutor-side-panel").style.display = "flex";
+        document.getElementById("close-tutor").style.display = "flex";
+        document.getElementById("open-tutor").style.display = "none";
+      }
+    }
+
+    // ── Python shims loaded into Pyodide ──────────────────────────────────────
     const SHIMS = `
-import asyncio
+import asyncio, sys, io, json
 from js import (motorRunForDegrees as _mDeg, motorRun as _mRun,
                 motorRunTime as _mTime, motorStop as _mStop,
                 sensorSetupMode as _sSensor, getLastColor as _gColor)
 
-# Color constants matching legoeducation
-orange  = 9
-purple  = 6
-blue    = 3
-magenta = 8
-green   = 5
+orange = 9; purple = 6; blue = 3; magenta = 8; green = 5
+
+def _plot(channel, x, y):
+    sys.stdout.write(f"\\x00PLOT\\x00{json.dumps({'channel':channel,'x':x,'y':y})}\\n")
 
 async def wait(seconds):
+    from js import window
+    if getattr(window, '_pyStop', False):
+        raise KeyboardInterrupt
     await asyncio.sleep(float(seconds))
 
 class singleMotor:
-    def __init__(self):
-        self._port  = 0
-        self._speed = 50
-    def connect(self, card_color=None, card_serial=None, port=0):
-        self._port = int(port)
-    async def spin(self, rotations=1):
-        await _mDeg(self._port, int(rotations * 360), self._speed)
-    async def stop(self):
-        await _mStop(self._port)
-    def set_speed(self, speed):
-        self._speed = int(max(0, min(100, speed)))
-    async def run(self):
-        await _mRun(self._port, self._speed)
+    def __init__(self): self._port = 0; self._speed = 50; self._pctr = [0]
+    def connect(self, card_serial=None, card_color=None, port=0): self._port = int(port)
+    async def spin(self, rotations=1): await _mDeg(self._port, int(rotations*360), self._speed)
+    async def stop(self): await _mStop(self._port)
+    def set_speed(self, speed): self._speed = int(max(0,min(100,speed)))
+    async def run(self): await _mRun(self._port, self._speed)
+    def plot(self):
+        import threading
+        self._pctr[0] = 0
+        def _sample():
+            import time
+            while True:
+                _plot('sm', self._pctr[0], 0)
+                self._pctr[0] += 1
+                time.sleep(0.05)
+        threading.Thread(target=_sample, daemon=True).start()
 
 class doubleMotor:
-    def __init__(self):
-        self._left  = 0  # Port A
-        self._right = 1  # Port B
-        self._speed = 50
-    def connect(self, card_color=None, card_serial=None):
-        pass
+    def __init__(self): self._left=0; self._right=1; self._speed=50; self._lctr=[0]; self._rctr=[0]
+    def connect(self, card_serial=None, card_color=None): pass
     async def move_steps(self, step=1):
-        d = int(180 * step)
-        await _mDeg(self._left,  d, self._speed)
-        await _mDeg(self._right, d, self._speed)
-    async def run(self):
-        await _mRun(self._left,  self._speed)
-        await _mRun(self._right, self._speed)
-    async def run_time(self, t=2000):
-        await _mTime(self._left,  int(t), self._speed)
-        await _mTime(self._right, int(t), self._speed)
-    async def run_left(self):
-        await _mRun(self._left, self._speed)
-    async def run_right(self):
-        await _mRun(self._right, self._speed)
+        d = int(-180*step)
+        await _mDeg(self._left, abs(d), self._speed if d>0 else -self._speed)
+        await _mDeg(self._right, abs(d), self._speed if d>0 else -self._speed)
+    async def run(self): await _mRun(self._left, self._speed); await _mRun(self._right, self._speed)
+    async def run_time(self, t=2000): await _mTime(self._left,int(t),self._speed); await _mTime(self._right,int(t),self._speed)
+    async def run_left(self, degrees=None):
+        if degrees is None: await _mRun(self._left, self._speed)
+        else: await _mDeg(self._left, int(degrees), self._speed)
+    async def run_right(self, degrees=None):
+        if degrees is None: await _mRun(self._right, self._speed)
+        else: await _mDeg(self._right, int(degrees), self._speed)
     async def turn_left(self, degrees=90):
-        d = int(degrees) * 2
-        await _mDeg(self._right, d,  self._speed)
-        await _mDeg(self._left,  d, -self._speed)
+        d = int(degrees)*2
+        await _mDeg(self._right, d, self._speed); await _mDeg(self._left, d, -self._speed)
     async def turn_right(self, degrees=90):
-        d = int(degrees) * 2
-        await _mDeg(self._left,  d,  self._speed)
-        await _mDeg(self._right, d, -self._speed)
-    def set_speed(self, speed):
-        self._speed = int(max(0, min(100, speed)))
-    def set_speed_left(self, speed):
-        pass
-    def set_speed_right(self, speed):
-        pass
-    async def stop(self):
-        await _mStop(self._left)
-        await _mStop(self._right)
-    async def movement_move_tank(self, left_pct, right_pct):
-        await _mRun(self._left,  int(left_pct  or 0))
-        await _mRun(self._right, int(right_pct or 0))
+        d = int(degrees)*2
+        await _mDeg(self._left, d, self._speed); await _mDeg(self._right, d, -self._speed)
+    def set_speed(self, s): self._speed = int(max(0,min(100,s)))
+    def set_speed_left(self, s): pass
+    def set_speed_right(self, s): pass
+    async def stop(self): await _mStop(self._left); await _mStop(self._right)
+    async def movement_move_tank(self, lp, rp):
+        await _mRun(self._left, int(lp or 0)); await _mRun(self._right, int(rp or 0))
+    def plot_left(self):
+        import threading, time
+        self._lctr[0] = 0
+        def _s():
+            while True: _plot('dm_left', self._lctr[0], 0); self._lctr[0]+=1; time.sleep(0.05)
+        threading.Thread(target=_s, daemon=True).start()
+    def plot_right(self):
+        import threading, time
+        self._rctr[0] = 0
+        def _s():
+            while True: _plot('dm_right', self._rctr[0], 0); self._rctr[0]+=1; time.sleep(0.05)
+        threading.Thread(target=_s, daemon=True).start()
 
 class colorSensor:
-    _COLORS = {0:'No color',1:'Red',2:'Yellow',3:'Blue',4:'Teal',
-               5:'Green',6:'Purple',7:'White',8:'Magenta',9:'Orange',10:'Azure'}
-    def __init__(self):
-        self._port = 2  # Port C
-    def connect(self, card_color=None, card_serial=None):
-        _sSensor(self._port)
-    def detect_color(self):
-        return self._COLORS.get(int(_gColor()), 'Unknown')
+    _C = {0:'No color',1:'Red',2:'Yellow',3:'Blue',4:'Teal',5:'Green',6:'Purple',7:'White',8:'Magenta',9:'Orange',10:'Azure'}
+    def __init__(self): self._port = 2
+    def connect(self, card_serial=None, card_color=None): _sSensor(self._port)
+    def detect_color(self): return self._C.get(int(_gColor()), 'Unknown')
 
 class controller:
-    def __init__(self):
-        self._left  = 0
-        self._right = 0
-    def connect(self, card_color=None, card_serial=None):
-        pass
+    def __init__(self): self._left=0; self._right=0
+    def connect(self, card_serial=None, card_color=None): pass
     def left_up(self):        return self._left > 0
     def left_down(self):      return self._left < 0
     def left_released(self):  return self._left == 0
@@ -421,12 +951,6 @@ class controller:
     let pyodide = null;
     let pyodideReady = false;
     const runBtn = document.getElementById('run');
-    const outputEl = document.getElementById('output');
-
-    function showOutput(text, cls) {
-      outputEl.textContent = text;
-      outputEl.className   = cls || '';
-    }
 
     async function initPyodide() {
       try {
@@ -434,78 +958,223 @@ class controller:
         await pyodide.runPythonAsync(SHIMS);
         pyodideReady = true;
         runBtn.disabled = false;
-        showOutput('Python ready — write code above and click ▶ Run.\nClick "○ Connect to LEGO" in the sidebar before using hardware.', '');
+        document.getElementById('output').textContent =
+          'Python ready — write code above and click ▶ Run.\nClick "○ Connect to LEGO" in the sidebar before using hardware.';
       } catch (err) {
-        showOutput('Failed to load Python: ' + err.message, 'error');
+        document.getElementById('output').textContent = 'Failed to load Python: ' + err.message;
+        document.getElementById('output').className = 'error';
+      }
+    }
+    initPyodide();
+    runBtn.disabled = true;
+
+    // ── LEGO connect button ────────────────────────────────────────────────────
+    async function handleConnect() {
+      const output = document.getElementById('output');
+      if (window._legoConnected) {
+        await legoDisconnect();
+        output.textContent = 'Disconnected from LEGO hub.';
+        output.className = '';
+      } else {
+        try {
+          output.textContent = 'Opening Bluetooth device picker…';
+          output.className = '';
+          await legoConnect();
+          output.textContent = 'Connected! Write code and click ▶ Run.';
+          output.className = 'success';
+        } catch (err) {
+          output.textContent = 'Connection failed: ' + err.message;
+          output.className = 'error';
+        }
       }
     }
 
-    initPyodide();
-
-    // ── run button ─────────────────────────────────────────────────────────────
-    runBtn.addEventListener('click', async () => {
-      if (!pyodideReady) { showOutput('Python is still loading…', 'error'); return; }
+    // ── Run button (Pyodide) ───────────────────────────────────────────────────
+    document.getElementById("run").addEventListener("click", async () => {
+      if (!pyodideReady) {
+        document.getElementById('output').textContent = 'Python is still loading…';
+        return;
+      }
       const code = editor.getValue().trim();
       if (!code) return;
-
+      const output = document.getElementById("output");
+      output.className = "";
+      output.textContent = "Running…";
+      destroyPlot();
+      window._pyStop = false;
       runBtn.disabled = true;
-      showOutput('Running…', '');
 
       try {
-        // Redirect stdout so print() output is captured
         pyodide.runPython(`import sys, io; _buf = io.StringIO(); sys.stdout = _buf`);
         await pyodide.runPythonAsync(code);
-        const out = pyodide.runPython(`sys.stdout = sys.__stdout__; _buf.getvalue()`);
-        showOutput(out || 'Done', 'success');
+        const raw = pyodide.runPython(`sys.stdout = sys.__stdout__; _buf.getvalue()`);
+        // Separate plot markers from display text
+        let displayOut = '';
+        for (const line of raw.split('\n')) {
+          if (line.startsWith('\x00PLOT\x00')) {
+            try { const d = JSON.parse(line.slice(6)); addPlotPoint(d.channel, d.x, d.y); } catch {}
+          } else {
+            displayOut += line + '\n';
+          }
+        }
+        output.textContent = displayOut.trim() || 'Done';
+        output.className = 'success';
       } catch (err) {
         try { pyodide.runPython(`sys.stdout = sys.__stdout__`); } catch (_) {}
-        // Strip Pyodide's internal traceback noise for cleaner student messages
-        const msg = err.message.split('\n').filter(l => !l.includes('pyodide')).join('\n').trim();
-        showOutput(msg || err.message, 'error');
+        if (err.message && err.message.includes('KeyboardInterrupt')) {
+          output.textContent = 'Stopped.';
+          output.className = '';
+        } else {
+          const clean = (err.message || '')
+            .split('\n').filter(l => !l.match(/^\s+at /)).join('\n').trim();
+          output.textContent = clean || err.message;
+          output.className = 'error';
+        }
       } finally {
         runBtn.disabled = false;
       }
     });
 
-    // ── LEGO connect button ────────────────────────────────────────────────────
-    async function handleConnect() {
-      if (window._legoConnected) {
-        await legoDisconnect();
-        showOutput('Disconnected from LEGO hub.', '');
-      } else {
-        try {
-          showOutput('Opening Bluetooth device picker…', '');
-          await legoConnect();
-          showOutput('Connected! Write code and click ▶ Run.', 'success');
-        } catch (err) {
-          showOutput('Connection failed: ' + err.message, 'error');
-        }
-      }
-    }
-
-    // ── CodeMirror ─────────────────────────────────────────────────────────────
-    document.getElementById('defaultOpen').click();
-
-    const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
-      mode:          'python',
-      theme:         'dracula',
-      lineNumbers:   true,
-      indentUnit:    4,
-      tabSize:       4,
-      indentWithTabs:false,
-      extraKeys: {
-        'Tab':       cm => cm.execCommand('indentMore'),
-        'Shift-Tab': cm => cm.execCommand('indentLess')
-      }
+    // ── Stop button ────────────────────────────────────────────────────────────
+    document.getElementById("stop").addEventListener("click", () => {
+      window._pyStop = true;
+      destroyPlot();
+      document.getElementById("output").textContent = 'Stopped.';
+      document.getElementById("output").className = '';
     });
 
-    // ── tab switcher ───────────────────────────────────────────────────────────
     function switchTab(event, tabname) {
-      document.querySelectorAll('.tabcontent').forEach(t => t.style.display = 'none');
-      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-      document.getElementById(tabname).style.display = 'block';
-      event.currentTarget.classList.add('active');
+        document.querySelectorAll(".tabcontent").forEach(t => t.style.display = "none");
+        document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+        document.getElementById(tabname).style.display = "block";
+        event.currentTarget.classList.add("active");
+
+        const tutorPanel = document.getElementById("tutor-side-panel");
+        if (tabname !== "tab1") {
+            tutorPanel.style.display = "none";
+            document.getElementById("open-tutor").style.display = "none";
+            document.getElementById("close-tutor").style.display = "none";
+        } else {
+            document.getElementById("open-tutor").style.display = "flex";
+            document.getElementById("close-tutor").style.display = "none";
+        }
     }
+
+    // ── Chat tab ──────────────────────────────────────────────
+    (function () {
+      let chatMessages = [];
+
+      const chatContainer = document.getElementById("chat-container");
+      const chatInput     = document.getElementById("chat-input");
+      const chatSendBtn   = document.getElementById("chat-send-btn");
+
+      chatInput.addEventListener("input", () => {
+        chatInput.style.height = "auto";
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + "px";
+      });
+
+      chatInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      function removeWelcome() {
+        const w = document.getElementById("chat-welcome");
+        if (w) w.remove();
+      }
+
+      function appendMessage(role, content) {
+        const wrapper = document.createElement("div");
+        wrapper.className = `chat-message ${role}`;
+        const label = document.createElement("div");
+        label.className = "chat-label";
+        label.textContent = role === "user" ? "You" : "Tutor";
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble";
+        if (role === "assistant") {
+          bubble.innerHTML = (typeof marked !== "undefined")
+            ? marked.parse(content)
+            : content.replace(/</g, "&lt;");
+        } else {
+          bubble.textContent = content;
+          bubble.style.whiteSpace = "pre-wrap";
+        }
+        wrapper.appendChild(label);
+        wrapper.appendChild(bubble);
+        chatContainer.appendChild(wrapper);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+
+      function showTyping() {
+        const wrapper = document.createElement("div");
+        wrapper.className = "chat-message assistant chat-typing";
+        wrapper.id = "chat-typing-indicator";
+        const label = document.createElement("div");
+        label.className = "chat-label";
+        label.textContent = "Tutor";
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble";
+        bubble.innerHTML = '<div class="chat-dot"></div><div class="chat-dot"></div><div class="chat-dot"></div>';
+        wrapper.appendChild(label);
+        wrapper.appendChild(bubble);
+        chatContainer.appendChild(wrapper);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+
+      function removeTyping() {
+        const el = document.getElementById("chat-typing-indicator");
+        if (el) el.remove();
+      }
+
+      window.sendChip = function (el) {
+        chatInput.value = el.textContent;
+        sendMessage();
+      };
+
+      window.sendMessage = async function () {
+        const text = chatInput.value.trim();
+        if (!text || chatSendBtn.disabled) return;
+        removeWelcome();
+        chatInput.value = "";
+        chatInput.style.height = "auto";
+        chatSendBtn.disabled = true;
+        chatMessages.push({ role: "user", content: text });
+        appendMessage("user", text);
+        showTyping();
+        try {
+          // Chat requires a backend server — not available in the web-only version
+          throw new Error("no-server");
+        } catch (err) {
+          removeTyping();
+          appendMessage("assistant", "The tutor chat requires a running server and isn't available in the web version yet. Check the function tabs for help with your code!");
+          chatMessages.pop();
+        }
+        chatSendBtn.disabled = false;
+        chatInput.focus();
+      };
+
+      window.clearChat = function () {
+        chatMessages = [];
+        chatContainer.innerHTML = "";
+        const w = document.createElement("div");
+        w.id = "chat-welcome";
+        w.innerHTML = `
+          <h3>Hi! I'm your Python tutor 👋</h3>
+          <p>Ask me anything about LEGO robotics or Python. I'm here to help you learn!</p>
+          <div id="chat-chips">
+            <button class="chat-chip" onclick="sendChip(this)">How do I make a car move forward?</button>
+            <button class="chat-chip" onclick="sendChip(this)">What's a for loop?</button>
+            <button class="chat-chip" onclick="sendChip(this)">How do I detect colors?</button>
+            <button class="chat-chip" onclick="sendChip(this)">How do I use the controller?</button>
+          </div>`;
+        const existing = document.getElementById("chat-welcome");
+        if (existing) existing.remove();
+        chatContainer.insertAdjacentElement("beforebegin", w);
+        chatInput.focus();
+      };
+    }());
   </script>
 </body>
 </html>
