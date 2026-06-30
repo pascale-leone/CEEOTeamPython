@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Easy Lego</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+  <!-- CodeMirror -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+
+  <!-- Pyodide (Python in the browser) -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+
+  <!-- LEGO Web Bluetooth layer -->
+  <script src="lego_ble.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background: #1e1f29;
+      font-family: monospace;
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+      gap: 12px;
+    }
+
+    h2 {
+      color: #f8f8f2;
+      font-family: verdana;
+      margin: 0;
+      letter-spacing: 0.05em;
+    }
+
+    .CodeMirror {
+      height: 300px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: monospace;
+      line-height: 1.6;
+    }
+
+    #run {
+      align-self: flex-start;
+      background: #50fa7b;
+      color: #1e1f29;
+      border: none;
+      padding: 8px 24px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+    }
+    #run:hover  { background: #69ff94; }
+    #run:disabled { background: #44475a; color: #6272a4; cursor: not-allowed; }
+
+    .tab-menu {
+      display: flex;
+      flex-direction: column;
+      background: #282a36;
+      padding: 20px 0 12px;
+      min-width: 180px;
+    }
+
+    .tab-button {
+      color: #f8f8f2;
+      font-family: verdana;
+      background: none;
+      border: none;
+      padding: 10px 20px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 13px;
+      border-left: 3px solid transparent;
+    }
+    .tab-button:hover  { background: #44475a; }
+    .tab-button.active { border-left: 3px solid #50fa7b; color: #50fa7b; background: #44475a; }
+
+    #connect-btn {
+      margin: auto 14px 0;
+      background: #bd93f9;
+      color: #1e1f29;
+      border: none;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: verdana;
+      letter-spacing: 0.03em;
+    }
+    #connect-btn:hover { opacity: 0.85; }
+
+    .tabcontent { color: white; font-family: verdana; }
+
+    .tab-content-area {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      font-family: verdana;
+    }
+
+    #output {
+      background: #282a36;
+      color: #f8f8f2;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 13px;
+      min-height: 40px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      border-left: 3px solid #6272a4;
+    }
+    #output.error   { border-left-color: #ff5555; color: #ff5555; }
+    #output.success { border-left-color: #50fa7b; }
+
+    pre {
+      background-color: #f4f4f4;
+      border: 1px solid #ddd;
+      color: #333;
+      page-break-inside: avoid;
+      font-family: monospace;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 1.6em;
+      max-width: 100%;
+      overflow: auto;
+      padding: 1em;
+      display: block;
+      word-wrap: break-word;
+    }
+
+    .tbl {
+      background-color: #f4f4f4;
+      border: 1px solid #ddd;
+      color: #333;
+      font-family: monospace;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 0.5em;
+      margin-left: 0.5em;
+      text-align: left;
+      max-width: 100%;
+      overflow: auto;
+      padding: 0.5em;
+      display: block;
+      word-wrap: break-word;
+    }
+
+    .multicolor-word span:nth-child(7n+1) { color: #ff0000; }
+    .multicolor-word span:nth-child(7n+2) { color: #ff7f00; }
+    .multicolor-word span:nth-child(7n+3) { color: #ffff00; }
+    .multicolor-word span:nth-child(7n+4) { color: #00ff00; }
+    .multicolor-word span:nth-child(7n+5) { color: #87CEFA; }
+
+    .note {
+      background: #44475a;
+      border-left: 3px solid #bd93f9;
+      border-radius: 4px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #f8f8f2;
+      font-family: verdana;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tab-menu">
+    <button class="tab-button active" onclick="switchTab(event,'tab1')" id="defaultOpen">Code</button>
+    <button class="tab-button" onclick="switchTab(event,'tab2')">Single Motor</button>
+    <button class="tab-button" onclick="switchTab(event,'tab3')">Double Motor</button>
+    <button class="tab-button" onclick="switchTab(event,'tab4')">Controller</button>
+    <button class="tab-button" onclick="switchTab(event,'tab5')">Color Sensor</button>
+    <button class="tab-button" onclick="switchTab(event,'tab6')">Python Tips</button>
+    <button id="connect-btn" onclick="handleConnect()">○ Connect to LEGO</button>
+  </div>
+
+  <div class="tab-content-area">
+
+    <!-- Tab 1: Code editor -->
+    <div id="tab1" class="tabcontent">
+      <h2>Welcome to Python Lego Robotics!</h2>
+
+      <div class="note">
+        <strong>Getting started:</strong> Click <strong>○ Connect to LEGO</strong> in the sidebar, then select your hub.
+        Use <strong>Chrome</strong> or <strong>Edge</strong> — other browsers don't support hardware connection.
+      </div>
+
+      <textarea id="code"></textarea>
+      <button id="run" disabled>▶ Run</button>
+      <div id="output">Loading Python engine, please wait…</div>
+
+      <h3>Connect your device</h3>
+      <p>Use the <span class="multicolor-word"><span>c</span><span>o</span><span>l</span><span>o</span><span>r</span></span> on your card to set the right color constant:</p>
+      <table>
+        <tr><th>Device</th><th>Setup code</th></tr>
+        <tr>
+          <th>Single Motor</th>
+          <th><pre class="tbl"><code>sm = singleMotor()
+sm.connect(card_color=orange, card_serial="1234")</code></pre></th>
+        </tr>
+        <tr>
+          <th>Double Motor</th>
+          <th><pre class="tbl"><code>dm = doubleMotor()
+dm.connect(card_color=orange, card_serial="1234")</code></pre></th>
+        </tr>
+        <tr>
+          <th>Controller</th>
+          <th><pre class="tbl"><code>c = controller()
+c.connect(card_color=orange, card_serial="1234")</code></pre></th>
+        </tr>
+        <tr>
+          <th>Color Sensor</th>
+          <th><pre class="tbl"><code>cs = colorSensor()
+cs.connect(card_color=orange, card_serial="1234")</code></pre></th>
+        </tr>
+      </table>
+
+      <h3>Try driving!</h3>
+      <pre><code>dm = doubleMotor()
+dm.connect(card_color=orange, card_serial="1234")
+
+await dm.move_steps(3)
+await dm.turn_right(90)
+await dm.move_steps(3)
+await dm.stop()</code></pre>
+    </div>
+
+    <!-- Tab 2: Single Motor -->
+    <div id="tab2" class="tabcontent">
+      <h3>Single Motor Functions</h3>
+      <div class="note">Add <code>await</code> before hardware calls so each command finishes before the next one starts.</div>
+      <p>Connect to the motor<pre><code>sm.connect(card_color=color, card_serial='1234')</code></pre></p>
+      <p>Spin the motor this many rotations<pre><code>await sm.spin(rotations)</code></pre></p>
+      <p>Stop the motor<pre><code>await sm.stop()</code></pre></p>
+      <p>Set the motor speed (1–100)<pre><code>sm.set_speed(speed)</code></pre></p>
+      <p>Run the motor continuously<pre><code>await sm.run()</code></pre></p>
+    </div>
+
+    <!-- Tab 3: Double Motor -->
+    <div id="tab3" class="tabcontent">
+      <h3>Double Motor Functions</h3>
+      <div class="note">Add <code>await</code> before hardware calls so each command finishes before the next one starts.</div>
+      <p>Connect to the motors<pre><code>dm.connect(card_color=color, card_serial='1234')</code></pre></p>
+      <p>Move this many steps (1 step = 180°)<pre><code>await dm.move_steps(1)</code></pre></p>
+      <p>Run the motors continuously<pre><code>await dm.run()</code></pre></p>
+      <p>Run for this many milliseconds<pre><code>await dm.run_time(milliseconds)</code></pre></p>
+      <p>Run the left motor<pre><code>await dm.run_left()</code></pre></p>
+      <p>Run the right motor<pre><code>await dm.run_right()</code></pre></p>
+      <p>Turn left by this many degrees<pre><code>await dm.turn_left(degrees)</code></pre></p>
+      <p>Turn right by this many degrees<pre><code>await dm.turn_right(degrees)</code></pre></p>
+      <p>Set the speed of both motors (1–100)<pre><code>dm.set_speed(speed)</code></pre></p>
+      <p>Stop the motors<pre><code>await dm.stop()</code></pre></p>
+    </div>
+
+    <!-- Tab 4: Controller -->
+    <div id="tab4" class="tabcontent">
+      <h3>Controller Functions</h3>
+      <div class="note">Add <code>await</code> before hardware calls so each command finishes before the next one starts.</div>
+      <p>Connect to the controller<pre><code>c.connect()</code></pre></p>
+      <p>Drive the double motor with the controller sticks for 10 seconds<pre><code>await c.drive(dm)</code></pre></p>
+      <p>Return True if left stick is pushed up<pre><code>c.left_up()</code></pre></p>
+      <p>Return True if left stick is pushed down<pre><code>c.left_down()</code></pre></p>
+      <p>Return True if left stick is released<pre><code>c.left_released()</code></pre></p>
+      <p>Return True if right stick is pushed up<pre><code>c.right_up()</code></pre></p>
+      <p>Return True if right stick is pushed down<pre><code>c.right_down()</code></pre></p>
+      <p>Return True if right stick is released<pre><code>c.right_released()</code></pre></p>
+    </div>
+
+    <!-- Tab 5: Color Sensor -->
+    <div id="tab5" class="tabcontent">
+      <h3>Color Sensor Functions</h3>
+      <p>Connect to the color sensor<pre><code>cs.connect(card_color=color, card_serial='1234')</code></pre></p>
+      <p>Return the detected color as a string<pre><code>cs.detect_color()</code></pre></p>
+    </div>
+
+    <!-- Tab 6: Python Tips -->
+    <div id="tab6" class="tabcontent">
+      <h3>General Python Tips!</h3>
+
+      <p><strong>Wait between commands</strong> — pause for a number of seconds:<br>
+      <pre><code>await wait(2)</code></pre></p>
+
+      <p><strong>if statements</strong> — make decisions:<br>
+      Example: Green means go!<br>
+      <pre><code>if cs.detect_color() == 'Green':
+    print('The color is green!')
+    await dm.run()</code></pre></p>
+
+      <p><strong>for loops</strong> — repeat a set number of times:<br>
+      Example: Move 5 steps!<br>
+      <pre><code>for i in range(5):
+    await dm.move_steps(1)
+    await wait(0.5)</code></pre></p>
+
+      <p><strong>while loops</strong> — repeat until a condition is met:<br>
+      Example: Drive until we see red!<br>
+      <pre><code>while cs.detect_color() != 'Red':
+    await dm.run()
+await dm.stop()</code></pre></p>
+    </div>
+
+  </div><!-- end tab-content-area -->
+
+  <script>
+    // ── Python shims (run inside Pyodide) ──────────────────────────────────────
+    const SHIMS = `
+import asyncio
+from js import (motorRunForDegrees as _mDeg, motorRun as _mRun,
+                motorRunTime as _mTime, motorStop as _mStop,
+                sensorSetupMode as _sSensor, getLastColor as _gColor)
+
+# Color constants matching legoeducation
+orange  = 9
+purple  = 6
+blue    = 3
+magenta = 8
+green   = 5
+
+async def wait(seconds):
+    await asyncio.sleep(float(seconds))
+
+class singleMotor:
+    def __init__(self):
+        self._port  = 0
+        self._speed = 50
+    def connect(self, card_color=None, card_serial=None, port=0):
+        self._port = int(port)
+    async def spin(self, rotations=1):
+        await _mDeg(self._port, int(rotations * 360), self._speed)
+    async def stop(self):
+        await _mStop(self._port)
+    def set_speed(self, speed):
+        self._speed = int(max(0, min(100, speed)))
+    async def run(self):
+        await _mRun(self._port, self._speed)
+
+class doubleMotor:
+    def __init__(self):
+        self._left  = 0  # Port A
+        self._right = 1  # Port B
+        self._speed = 50
+    def connect(self, card_color=None, card_serial=None):
+        pass
+    async def move_steps(self, step=1):
+        d = int(180 * step)
+        await _mDeg(self._left,  d, self._speed)
+        await _mDeg(self._right, d, self._speed)
+    async def run(self):
+        await _mRun(self._left,  self._speed)
+        await _mRun(self._right, self._speed)
+    async def run_time(self, t=2000):
+        await _mTime(self._left,  int(t), self._speed)
+        await _mTime(self._right, int(t), self._speed)
+    async def run_left(self):
+        await _mRun(self._left, self._speed)
+    async def run_right(self):
+        await _mRun(self._right, self._speed)
+    async def turn_left(self, degrees=90):
+        d = int(degrees) * 2
+        await _mDeg(self._right, d,  self._speed)
+        await _mDeg(self._left,  d, -self._speed)
+    async def turn_right(self, degrees=90):
+        d = int(degrees) * 2
+        await _mDeg(self._left,  d,  self._speed)
+        await _mDeg(self._right, d, -self._speed)
+    def set_speed(self, speed):
+        self._speed = int(max(0, min(100, speed)))
+    def set_speed_left(self, speed):
+        pass
+    def set_speed_right(self, speed):
+        pass
+    async def stop(self):
+        await _mStop(self._left)
+        await _mStop(self._right)
+    async def movement_move_tank(self, left_pct, right_pct):
+        await _mRun(self._left,  int(left_pct  or 0))
+        await _mRun(self._right, int(right_pct or 0))
+
+class colorSensor:
+    _COLORS = {0:'No color',1:'Red',2:'Yellow',3:'Blue',4:'Teal',
+               5:'Green',6:'Purple',7:'White',8:'Magenta',9:'Orange',10:'Azure'}
+    def __init__(self):
+        self._port = 2  # Port C
+    def connect(self, card_color=None, card_serial=None):
+        _sSensor(self._port)
+    def detect_color(self):
+        return self._COLORS.get(int(_gColor()), 'Unknown')
+
+class controller:
+    def __init__(self):
+        self._left  = 0
+        self._right = 0
+    def connect(self, card_color=None, card_serial=None):
+        pass
+    def left_up(self):        return self._left > 0
+    def left_down(self):      return self._left < 0
+    def left_released(self):  return self._left == 0
+    def right_up(self):       return self._right > 0
+    def right_down(self):     return self._right < 0
+    def right_released(self): return self._right == 0
+    def left_position(self):  return self._left
+    def right_position(self): return self._right
+    async def drive(self, dm, t=100):
+        for _ in range(int(t)):
+            await dm.movement_move_tank(self._left, self._right)
+            await asyncio.sleep(0.1)
+`;
+
+    // ── Pyodide init ───────────────────────────────────────────────────────────
+    let pyodide = null;
+    let pyodideReady = false;
+    const runBtn = document.getElementById('run');
+    const outputEl = document.getElementById('output');
+
+    function showOutput(text, cls) {
+      outputEl.textContent = text;
+      outputEl.className   = cls || '';
+    }
+
+    async function initPyodide() {
+      try {
+        pyodide = await loadPyodide();
+        await pyodide.runPythonAsync(SHIMS);
+        pyodideReady = true;
+        runBtn.disabled = false;
+        showOutput('Python ready — write code above and click ▶ Run.\nClick "○ Connect to LEGO" in the sidebar before using hardware.', '');
+      } catch (err) {
+        showOutput('Failed to load Python: ' + err.message, 'error');
+      }
+    }
+
+    initPyodide();
+
+    // ── run button ─────────────────────────────────────────────────────────────
+    runBtn.addEventListener('click', async () => {
+      if (!pyodideReady) { showOutput('Python is still loading…', 'error'); return; }
+      const code = editor.getValue().trim();
+      if (!code) return;
+
+      runBtn.disabled = true;
+      showOutput('Running…', '');
+
+      try {
+        // Redirect stdout so print() output is captured
+        pyodide.runPython(`import sys, io; _buf = io.StringIO(); sys.stdout = _buf`);
+        await pyodide.runPythonAsync(code);
+        const out = pyodide.runPython(`sys.stdout = sys.__stdout__; _buf.getvalue()`);
+        showOutput(out || 'Done', 'success');
+      } catch (err) {
+        try { pyodide.runPython(`sys.stdout = sys.__stdout__`); } catch (_) {}
+        // Strip Pyodide's internal traceback noise for cleaner student messages
+        const msg = err.message.split('\n').filter(l => !l.includes('pyodide')).join('\n').trim();
+        showOutput(msg || err.message, 'error');
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+
+    // ── LEGO connect button ────────────────────────────────────────────────────
+    async function handleConnect() {
+      if (window._legoConnected) {
+        await legoDisconnect();
+        showOutput('Disconnected from LEGO hub.', '');
+      } else {
+        try {
+          showOutput('Opening Bluetooth device picker…', '');
+          await legoConnect();
+          showOutput('Connected! Write code and click ▶ Run.', 'success');
+        } catch (err) {
+          showOutput('Connection failed: ' + err.message, 'error');
+        }
+      }
+    }
+
+    // ── CodeMirror ─────────────────────────────────────────────────────────────
+    document.getElementById('defaultOpen').click();
+
+    const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+      mode:          'python',
+      theme:         'dracula',
+      lineNumbers:   true,
+      indentUnit:    4,
+      tabSize:       4,
+      indentWithTabs:false,
+      extraKeys: {
+        'Tab':       cm => cm.execCommand('indentMore'),
+        'Shift-Tab': cm => cm.execCommand('indentLess')
+      }
+    });
+
+    // ── tab switcher ───────────────────────────────────────────────────────────
+    function switchTab(event, tabname) {
+      document.querySelectorAll('.tabcontent').forEach(t => t.style.display = 'none');
+      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabname).style.display = 'block';
+      event.currentTarget.classList.add('active');
+    }
+  </script>
+</body>
+</html>
