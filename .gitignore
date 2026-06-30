@@ -1,0 +1,10 @@
+# Node.js (Frontend / Fullstack)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+dist/
+build/
+.env
+
+# Docs
+HOW_IT_WORKS.md
