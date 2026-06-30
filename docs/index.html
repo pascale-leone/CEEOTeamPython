@@ -848,6 +848,46 @@ color = cs.detect_color()
       }
     }
 
+    // ── Tutor system prompt (sent directly to the Render proxy) ──────────────
+    const TUTOR_SYSTEM_PROMPT = `You are a friendly Python tutor helping elementary school students learn to code LEGO robotics. You are patient, encouraging, and use simple language.
+
+## DOCUMENTATION-FIRST RULE — FOLLOW THIS BEFORE EVERY ANSWER ##
+The student's app has five built-in documentation sections visible on their screen:
+  - "Double Motor Functions"
+  - "Single Motor Functions"
+  - "Controller Functions"
+  - "Color Sensor Functions"
+  - "General Python tips!"
+
+BEFORE giving any code or direct answer about how to use a device, you MUST:
+1. Tell the student which section to look at first.
+2. Ask them to read it and come back with what they found.
+3. Only give direct code or a detailed answer AFTER the student says they already checked the docs or asks a follow-up.
+
+Students use the following Python library:
+
+DOUBLE MOTOR (dm = doubleMotor())
+  dm.connect(card_serial)  dm.move_steps(step=1)  dm.run()  dm.run_time(time=2000)
+  dm.run_left()  dm.run_right()  dm.turn_left(degrees=90)  dm.turn_right(degrees=90)
+  dm.set_speed(speed)  dm.stop()
+
+SINGLE MOTOR (sm = singleMotor())
+  sm.connect(card_serial)  sm.spin(rotations=1)  sm.run()  sm.set_speed(speed)  sm.stop()
+
+COLOR SENSOR (cs = colorSensor())
+  cs.connect(card_serial)  cs.detect_color() → 'Red','Blue','Green','Yellow','Orange','Purple','White','Teal','Magenta','Azure','No color'
+
+CONTROLLER (c = controller())
+  c.connect(card_serial)  c.drive(dm, t=100)
+  c.left_up()  c.left_down()  c.left_released()  c.right_up()  c.right_down()  c.right_released()
+
+Teaching guidelines:
+- Always be encouraging. Use simple, everyday language.
+- Point students to the relevant docs tab FIRST before giving code answers.
+- Keep code examples short and focused.
+- Gently correct mistakes and explain why.
+- Always say LEGO (all caps), not lego or Lego.`;
+
     // ── Python shims loaded into Pyodide ──────────────────────────────────────
     const SHIMS = `
 import asyncio, sys, io, json
@@ -1144,11 +1184,30 @@ class controller:
         appendMessage("user", text);
         showTyping();
         try {
-          // Chat requires a backend server — not available in the web-only version
-          throw new Error("no-server");
+          const code  = editor.getValue().trim();
+          const error = (() => { const o = document.getElementById("output"); return o.classList.contains("error") ? o.textContent.trim() : ""; })();
+
+          let system = TUTOR_SYSTEM_PROMPT;
+          if (code)  system += `\n\n## Student's Current Code\n\`\`\`python\n${code}\n\`\`\``;
+          if (error) system += `\n\n## Error from Last Run\n\`\`\`\n${error}\n\`\`\`\nHelp them understand what the error means and how to fix it.`;
+
+          const res = await fetch("https://ceeoteampython.onrender.com/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages: chatMessages, system, model: "claude-haiku-4-5-20251001", max_tokens: 1024 }),
+          });
+          const data = await res.json();
+          removeTyping();
+          if (data.error) {
+            appendMessage("assistant", "Sorry, something went wrong. Please try again.");
+            chatMessages.pop();
+          } else {
+            chatMessages.push({ role: "assistant", content: data.response });
+            appendMessage("assistant", data.response);
+          }
         } catch (err) {
           removeTyping();
-          appendMessage("assistant", "The tutor chat requires a running server and isn't available in the web version yet. Check the function tabs for help with your code!");
+          appendMessage("assistant", "Could not reach the tutor server. Check your internet connection and try again.");
           chatMessages.pop();
         }
         chatSendBtn.disabled = false;
