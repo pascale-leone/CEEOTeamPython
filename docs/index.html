@@ -891,11 +891,30 @@ Teaching guidelines:
     // ── Python shims loaded into Pyodide ──────────────────────────────────────
     const SHIMS = `
 import asyncio, sys, io, json
-from js import (motorRunForDegrees as _mDeg, motorRun as _mRun,
-                motorRunTime as _mTime, motorStop as _mStop,
-                sensorSetupMode as _sSensor, getLastColor as _gColor)
+from js import (
+    movementSetSpeed as _mvSpd, movementMove as _mv,
+    movementMoveForDegrees as _mvDeg, movementMoveForTime as _mvTime,
+    movementStop as _mvStop, movementTurnForDegrees as _mvTurn,
+    motorSetSpeed as _mSpd, motorRun as _mRun,
+    motorRunForDegrees as _mDeg, motorRunForTime as _mTime,
+    motorStop as _mStop,
+    getLastColor as _gColor,
+    getControllerLeft as _gLeft, getControllerRight as _gRight,
+)
 
-orange = 9; purple = 6; blue = 3; magenta = 8; green = 5
+# Direction constants (mirror legoeducation rpc_message.py)
+_MOVE_FWD = 0   # MOVEMENT_MOVE_DIRECTION_FORWARD
+_MOVE_BWD = 1   # MOVEMENT_MOVE_DIRECTION_BACKWARD
+_TURN_L   = 2   # MOVEMENT_TURN_DIRECTION_LEFT
+_TURN_R   = 3   # MOVEMENT_TURN_DIRECTION_RIGHT
+_MOTOR_CW  = 0  # MOTOR_MOVE_DIRECTION_CLOCKWISE
+_MOTOR_CCW = 1  # MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE
+_ML = 1         # MOTOR_BITS_LEFT
+_MR = 2         # MOTOR_BITS_RIGHT
+
+# Color constants students pass to connect()
+orange=8; purple=2; blue=3; magenta=1; green=6; red=9
+teal=4; azure=4; yellow=7; white=10; black=0; pink=1
 
 def _plot(channel, x, y):
     sys.stdout.write(f"\\x00PLOT\\x00{json.dumps({'channel':channel,'x':x,'y':y})}\\n")
@@ -907,83 +926,90 @@ async def wait(seconds):
     await asyncio.sleep(float(seconds))
 
 class singleMotor:
-    def __init__(self): self._port = 0; self._speed = 50; self._pctr = [0]
-    def connect(self, card_serial=None, card_color=None, port=0): self._port = int(port)
-    async def spin(self, rotations=1): await _mDeg(self._port, int(rotations*360), self._speed)
-    async def stop(self): await _mStop(self._port)
-    def set_speed(self, speed): self._speed = int(max(0,min(100,speed)))
-    async def run(self): await _mRun(self._port, self._speed)
+    def __init__(self): self._speed = 50; self._pctr = [0]
+    def connect(self, card_serial=None, card_color=None): pass
+    def set_speed(self, s): self._speed = int(max(0, min(100, s)))
+    async def spin(self, rotations=1):
+        await _mSpd(_ML, self._speed)
+        await _mDeg(_ML, int(rotations * 360), _MOTOR_CW)
+    async def run(self):
+        await _mSpd(_ML, self._speed)
+        await _mRun(_ML, _MOTOR_CW)
+    async def stop(self): await _mStop(_ML)
     def plot(self):
-        import threading
+        import threading, time
         self._pctr[0] = 0
-        def _sample():
-            import time
-            while True:
-                _plot('sm', self._pctr[0], 0)
-                self._pctr[0] += 1
-                time.sleep(0.05)
-        threading.Thread(target=_sample, daemon=True).start()
+        def _s():
+            while True: _plot('sm', self._pctr[0], 0); self._pctr[0] += 1; time.sleep(0.05)
+        threading.Thread(target=_s, daemon=True).start()
 
 class doubleMotor:
-    def __init__(self): self._left=0; self._right=1; self._speed=50; self._lctr=[0]; self._rctr=[0]
+    def __init__(self): self._speed = 50; self._lctr = [0]; self._rctr = [0]
     def connect(self, card_serial=None, card_color=None): pass
-    async def move_steps(self, step=1):
-        d = int(-180*step)
-        await _mDeg(self._left, abs(d), self._speed if d>0 else -self._speed)
-        await _mDeg(self._right, abs(d), self._speed if d>0 else -self._speed)
-    async def run(self): await _mRun(self._left, self._speed); await _mRun(self._right, self._speed)
-    async def run_time(self, t=2000): await _mTime(self._left,int(t),self._speed); await _mTime(self._right,int(t),self._speed)
-    async def run_left(self, degrees=None):
-        if degrees is None: await _mRun(self._left, self._speed)
-        else: await _mDeg(self._left, int(degrees), self._speed)
-    async def run_right(self, degrees=None):
-        if degrees is None: await _mRun(self._right, self._speed)
-        else: await _mDeg(self._right, int(degrees), self._speed)
-    async def turn_left(self, degrees=90):
-        d = int(degrees)*2
-        await _mDeg(self._right, d, self._speed); await _mDeg(self._left, d, -self._speed)
-    async def turn_right(self, degrees=90):
-        d = int(degrees)*2
-        await _mDeg(self._left, d, self._speed); await _mDeg(self._right, d, -self._speed)
-    def set_speed(self, s): self._speed = int(max(0,min(100,s)))
+    def set_speed(self, s): self._speed = int(max(0, min(100, s)))
     def set_speed_left(self, s): pass
     def set_speed_right(self, s): pass
-    async def stop(self): await _mStop(self._left); await _mStop(self._right)
-    async def movement_move_tank(self, lp, rp):
-        await _mRun(self._left, int(lp or 0)); await _mRun(self._right, int(rp or 0))
+    async def move_steps(self, step=1):
+        await _mvSpd(self._speed)
+        await _mvDeg(-180 * int(step), _MOVE_FWD)
+    async def run(self):
+        await _mvSpd(self._speed)
+        await _mv(_MOVE_BWD)
+    async def run_time(self, time=2000):
+        await _mvSpd(self._speed)
+        await _mvTime(int(time), _MOVE_BWD)
+    async def run_left(self, degrees=None):
+        await _mSpd(_ML, self._speed)
+        if degrees is None: await _mRun(_ML, _MOTOR_CCW)
+        else: await _mDeg(_ML, int(degrees), _MOTOR_CCW)
+    async def run_right(self, degrees=None):
+        await _mSpd(_MR, self._speed)
+        if degrees is None: await _mRun(_MR, _MOTOR_CCW)
+        else: await _mDeg(_MR, int(degrees), _MOTOR_CCW)
+    async def turn_left(self, degrees=90):
+        await _mvSpd(self._speed)
+        await _mvTurn(int(degrees), _TURN_L)
+    async def turn_right(self, degrees=90):
+        await _mvSpd(self._speed)
+        await _mvTurn(int(degrees), _TURN_R)
+    async def stop(self): await _mvStop()
+    async def _tank(self, lp, rp):
+        lp = int(lp or 0); rp = int(rp or 0)
+        await _mSpd(_ML, abs(lp)); await _mRun(_ML, _MOTOR_CW if lp >= 0 else _MOTOR_CCW)
+        await _mSpd(_MR, abs(rp)); await _mRun(_MR, _MOTOR_CW if rp >= 0 else _MOTOR_CCW)
     def plot_left(self):
         import threading, time
         self._lctr[0] = 0
         def _s():
-            while True: _plot('dm_left', self._lctr[0], 0); self._lctr[0]+=1; time.sleep(0.05)
+            while True: _plot('dm_left', self._lctr[0], 0); self._lctr[0] += 1; time.sleep(0.05)
         threading.Thread(target=_s, daemon=True).start()
     def plot_right(self):
         import threading, time
         self._rctr[0] = 0
         def _s():
-            while True: _plot('dm_right', self._rctr[0], 0); self._rctr[0]+=1; time.sleep(0.05)
+            while True: _plot('dm_right', self._rctr[0], 0); self._rctr[0] += 1; time.sleep(0.05)
         threading.Thread(target=_s, daemon=True).start()
 
 class colorSensor:
-    _C = {0:'No color',1:'Red',2:'Yellow',3:'Blue',4:'Teal',5:'Green',6:'Purple',7:'White',8:'Magenta',9:'Orange',10:'Azure'}
-    def __init__(self): self._port = 2
-    def connect(self, card_serial=None, card_color=None): _sSensor(self._port)
-    def detect_color(self): return self._C.get(int(_gColor()), 'Unknown')
+    # Color index → name (legoeducation LegoColor enum)
+    _C = {-1:'No color', 0:'Black', 1:'Magenta', 2:'Purple', 3:'Blue', 4:'Azure',
+          5:'Teal', 6:'Green', 7:'Yellow', 8:'Orange', 9:'Red', 10:'White'}
+    def connect(self, card_serial=None, card_color=None): pass
+    def detect_color(self): return self._C.get(int(_gColor()), 'No color')
 
 class controller:
-    def __init__(self): self._left=0; self._right=0
     def connect(self, card_serial=None, card_color=None): pass
-    def left_up(self):        return self._left > 0
-    def left_down(self):      return self._left < 0
-    def left_released(self):  return self._left == 0
-    def right_up(self):       return self._right > 0
-    def right_down(self):     return self._right < 0
-    def right_released(self): return self._right == 0
-    def left_position(self):  return self._left
-    def right_position(self): return self._right
+    def left_up(self):        return int(_gLeft()) > 0
+    def left_down(self):      return int(_gLeft()) < 0
+    def left_released(self):  return int(_gLeft()) == 0
+    def right_up(self):       return int(_gRight()) > 0
+    def right_down(self):     return int(_gRight()) < 0
+    def right_released(self): return int(_gRight()) == 0
+    def left_position(self):  return int(_gLeft())
+    def right_position(self): return int(_gRight())
     async def drive(self, dm, t=100):
         for _ in range(int(t)):
-            await dm.movement_move_tank(self._left, self._right)
+            await dm._tank(int(_gLeft()), int(_gRight()))
             await asyncio.sleep(0.1)
 `;
 
