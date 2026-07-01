@@ -497,7 +497,6 @@
             <th><pre class="tbl">
               <code>
 sm = singleMotor()
-sm.connect(card_serial="1234")
             </code></pre></th>
           </tr>
           <tr>
@@ -505,7 +504,6 @@ sm.connect(card_serial="1234")
             <th><pre class="tbl">
               <code>
 dm = doubleMotor()
-dm.connect(card_serial="1234")
             </code></pre></th>
           </tr>
           <tr>
@@ -513,7 +511,6 @@ dm.connect(card_serial="1234")
             <th><pre class="tbl">
               <code>
 c = controller()
-c.connect(card_serial="1234")
             </code></pre></th>
           </tr>
           <tr>
@@ -521,18 +518,13 @@ c.connect(card_serial="1234")
             <th><pre class="tbl">
               <code>
 cs = colorSensor()
-cs.connect(card_serial="1234")
             </code></pre></th>
           </tr>
         </table>
         <h3>Try driving!</h3>
         <pre><code>
 dm = doubleMotor()
-dm.connect(card_serial="1234")
-
 c = controller()
-c.connect(card_serial="1234")
-
 c.drive(dm)
         </code></pre>
     </div>
@@ -540,7 +532,6 @@ c.drive(dm)
     <div id="tab2" class="tabcontent">
         <h3>Single Motor Functions</h3>
         <p>Define a single motor (always do this first!) <pre><code>sm = singleMotor()</code></pre> </p>
-        <p>Connect to the single motor<pre><code>sm.connect(card_serial='1234')</code></pre></p>
         <p>Spin the motor this many times! <pre><code>sm.spin(rotations)</code></pre></p>
         <p>Stop the motor<pre><code>sm.stop()</code></pre></p>
         <p>Set the motor speed<pre><code>sm.set_speed(speed)</code></pre></p>
@@ -552,7 +543,6 @@ c.drive(dm)
     <div id="tab3" class="tabcontent">
         <h3>Double Motor Functions</h3>
         <p>Define a double motor (always do this first!) <pre><code>dm = doubleMotor()</code></pre> </p>
-        <p>Connect to the double motor <pre><code>dm.connect(card_serial='1234')</code></pre></p>
         <p>Run the motors <pre><code>dm.run()</code></pre></p>
         <p>Run the motors for this many milliseconds <pre><code>dm.run_time(time)</code></pre></p>
         <p>Run the left motor (<em>Try adding a number inside of the parenthesis! What happens?</em>)<pre><code>dm.run_left()</code></pre></p>
@@ -575,7 +565,6 @@ c.drive(dm)
     <div id="tab4" class="tabcontent">
         <h3>Controller Functions</h3>
         <p>Define a controller (always do this first!) <pre><code>c = controller()</code></pre> </p>
-        <p>Connect to the controller<pre><code>c.connect(card_serial="1234")</code></pre></p>
         <p>Control the double motor for 10 seconds using the controller sticks<pre><code>c.drive(dm)</code></pre></p>
         <p>Return True if left stick is up<pre><code>c.left_up()</code></pre></p>
         <p>Return True if left stick is down<pre><code>c.left_down()</code></pre></p>
@@ -587,7 +576,6 @@ c.drive(dm)
     <div id="tab5" class="tabcontent">
         <h3>Color Sensor Function</h3>
         <p>Define a color sensor (always do this first!) <pre><code>cs = colorSensor()</code></pre> </p>
-        <p>Connect to the color sensor<pre><code>cs.connect(card_serial="1234")</code></pre></p>
         <p>Return the detected color<pre><code>cs.detect_color()</code></pre></p>
     </div>
     <div id="tab6" class="tabcontent">
@@ -679,7 +667,6 @@ color = cs.detect_color()
 
     const CLASS_METHODS = {
       doubleMotor: [
-        { name: "connect",         sig: "(card_serial)" },
         { name: "move_steps",      sig: "(step=1)" },
         { name: "run",             sig: "()" },
         { name: "run_time",        sig: "(time=2000)" },
@@ -695,7 +682,6 @@ color = cs.detect_color()
         { name: "plot_right",      sig: "()" },
       ],
       singleMotor: [
-        { name: "connect",   sig: "(card_serial)" },
         { name: "spin",      sig: "(rotations=1)" },
         { name: "stop",      sig: "()" },
         { name: "set_speed", sig: "(speed)" },
@@ -703,11 +689,9 @@ color = cs.detect_color()
         { name: "plot",      sig: "()" },
       ],
       colorSensor: [
-        { name: "connect",      sig: "(card_serial)" },
         { name: "detect_color", sig: "()" },
       ],
       controller: [
-        { name: "connect",        sig: "(card_serial)" },
         { name: "left_up",        sig: "()" },
         { name: "left_down",      sig: "()" },
         { name: "left_released",  sig: "()" },
@@ -867,18 +851,18 @@ BEFORE giving any code or direct answer about how to use a device, you MUST:
 Students use the following Python library:
 
 DOUBLE MOTOR (dm = doubleMotor())
-  dm.connect(card_serial)  dm.move_steps(step=1)  dm.run()  dm.run_time(time=2000)
+  dm.move_steps(step=1)  dm.run()  dm.run_time(time=2000)
   dm.run_left()  dm.run_right()  dm.turn_left(degrees=90)  dm.turn_right(degrees=90)
   dm.set_speed(speed)  dm.stop()
 
 SINGLE MOTOR (sm = singleMotor())
-  sm.connect(card_serial)  sm.spin(rotations=1)  sm.run()  sm.set_speed(speed)  sm.stop()
+  sm.spin(rotations=1)  sm.run()  sm.set_speed(speed)  sm.stop()
 
 COLOR SENSOR (cs = colorSensor())
-  cs.connect(card_serial)  cs.detect_color() → 'Red','Blue','Green','Yellow','Orange','Purple','White','Teal','Magenta','Azure','No color'
+  cs.detect_color() → 'Red','Blue','Green','Yellow','Orange','Purple','White','Teal','Magenta','Azure','No color'
 
 CONTROLLER (c = controller())
-  c.connect(card_serial)  c.drive(dm, t=100)
+  c.drive(dm, t=100)
   c.left_up()  c.left_down()  c.left_released()  c.right_up()  c.right_down()  c.right_released()
 
 Teaching guidelines:
