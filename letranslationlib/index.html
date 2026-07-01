@@ -486,7 +486,6 @@
         <button id="stop"><span id="stopsign">⬣</span> Stop</button>
         <div id="output">Loading Python engine, please wait…</div>
         <h3>Getting started...</h3>
-        <p>Make sure to use the <strong>number</strong> on your card!</p>
         <table>
           <tr>
             <th>What are you using?</th>
@@ -834,6 +833,7 @@ color = cs.detect_color()
 
     // ── Tutor system prompt (sent directly to the Render proxy) ──────────────
     const TUTOR_SYSTEM_PROMPT = `You are a friendly Python tutor helping elementary school students learn to code LEGO robotics. You are patient, encouraging, and use simple language.
+    You are embedded in an application. If students need help connecting, direct them to the connection button on the home page.
 
 ## DOCUMENTATION-FIRST RULE — FOLLOW THIS BEFORE EVERY ANSWER ##
 The student's app has five built-in documentation sections visible on their screen:
@@ -843,7 +843,7 @@ The student's app has five built-in documentation sections visible on their scre
   - "Color Sensor Functions"
   - "General Python tips!"
 
-BEFORE giving any code or direct answer about how to use a device, you MUST:
+BEFORE giving any code you MUST:
 1. Tell the student which section to look at first.
 2. Ask them to read it and come back with what they found.
 3. Only give direct code or a detailed answer AFTER the student says they already checked the docs or asks a follow-up.
