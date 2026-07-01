@@ -353,10 +353,24 @@ function getLastColor()       { return _conn.colorSensor?.lastColor ?? -1; }
 function getControllerLeft()  { return _conn.controller?.ctrlLeft ?? 0; }
 function getControllerRight() { return _conn.controller?.ctrlRight ?? 0; }
 
+// ── stop all motors on all connected devices ───────────────────────────────────
+
+async function legoStopAll() {
+  const tasks = [];
+  if (_conn.doubleMotor) {
+    tasks.push(_sendTo(_conn.doubleMotor, [MOVEMENT_STOP_COMMAND]).catch(() => {}));
+    tasks.push(_sendTo(_conn.doubleMotor, [MOTOR_STOP_COMMAND, MOTOR_BITS_BOTH]).catch(() => {}));
+  }
+  if (_conn.singleMotor) {
+    tasks.push(_sendTo(_conn.singleMotor, [MOTOR_STOP_COMMAND, MOTOR_BITS_LEFT]).catch(() => {}));
+  }
+  await Promise.all(tasks);
+}
+
 // ── exports ───────────────────────────────────────────────────────────────────
 
 Object.assign(window, {
-  legoConnect, legoDisconnect,
+  legoConnect, legoDisconnect, legoStopAll,
   motorSetSpeed, motorRun, motorRunForDegrees, motorRunForTime, motorStop,
   movementSetSpeed, movementMove, movementMoveForDegrees,
   movementMoveForTime, movementStop, movementTurnForDegrees,

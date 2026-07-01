@@ -1111,6 +1111,7 @@ class controller:
         }
       } finally {
         runBtn.disabled = false;
+        if (window.legoStopAll) legoStopAll().catch(() => {});
       }
     });
 
@@ -1120,6 +1121,7 @@ class controller:
       destroyPlot();
       document.getElementById("output").textContent = 'Stopped.';
       document.getElementById("output").className = '';
+      if (window.legoStopAll) legoStopAll().catch(() => {});
     });
 
     function switchTab(event, tabname) {
