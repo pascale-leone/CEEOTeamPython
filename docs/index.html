@@ -919,20 +919,31 @@ teal=4; azure=4; yellow=7; white=10; black=0; pink=1
 def _plot(channel, x, y):
     sys.stdout.write(f"\\x00PLOT\\x00{json.dumps({'channel':channel,'x':x,'y':y})}\\n")
 
-async def wait(seconds):
+def _check_stop():
     from js import window
     if getattr(window, '_pyStop', False):
         raise KeyboardInterrupt
-    await asyncio.sleep(float(seconds))
+
+async def wait(seconds):
+    total = float(seconds)
+    step  = 0.05
+    elapsed = 0.0
+    while elapsed < total:
+        _check_stop()
+        await asyncio.sleep(min(step, total - elapsed))
+        elapsed += step
+    _check_stop()
 
 class singleMotor:
     def __init__(self): self._speed = 50; self._pctr = [0]
     def connect(self, card_serial=None, card_color=None): pass
     def set_speed(self, s): self._speed = int(max(0, min(100, s)))
     async def spin(self, rotations=1):
+        _check_stop()
         await _mSpd(_ML, self._speed)
         await _mDeg(_ML, int(rotations * 360), _MOTOR_CW)
     async def run(self):
+        _check_stop()
         await _mSpd(_ML, self._speed)
         await _mRun(_ML, _MOTOR_CW)
     async def stop(self): await _mStop(_ML)
@@ -950,26 +961,33 @@ class doubleMotor:
     def set_speed_left(self, s): pass
     def set_speed_right(self, s): pass
     async def move_steps(self, step=1):
+        _check_stop()
         await _mvSpd(self._speed)
         await _mvDeg(-180 * int(step), _MOVE_FWD)
     async def run(self):
+        _check_stop()
         await _mvSpd(self._speed)
         await _mv(_MOVE_BWD)
     async def run_time(self, time=2000):
+        _check_stop()
         await _mvSpd(self._speed)
         await _mvTime(int(time), _MOVE_BWD)
     async def run_left(self, degrees=None):
+        _check_stop()
         await _mSpd(_ML, self._speed)
         if degrees is None: await _mRun(_ML, _MOTOR_CCW)
         else: await _mDeg(_ML, int(degrees), _MOTOR_CCW)
     async def run_right(self, degrees=None):
+        _check_stop()
         await _mSpd(_MR, self._speed)
         if degrees is None: await _mRun(_MR, _MOTOR_CCW)
         else: await _mDeg(_MR, int(degrees), _MOTOR_CCW)
     async def turn_left(self, degrees=90):
+        _check_stop()
         await _mvSpd(self._speed)
         await _mvTurn(int(degrees), _TURN_L)
     async def turn_right(self, degrees=90):
+        _check_stop()
         await _mvSpd(self._speed)
         await _mvTurn(int(degrees), _TURN_R)
     async def stop(self): await _mvStop()

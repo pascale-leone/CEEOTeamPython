@@ -353,9 +353,24 @@ function getLastColor()       { return _conn.colorSensor?.lastColor ?? -1; }
 function getControllerLeft()  { return _conn.controller?.ctrlLeft ?? 0; }
 function getControllerRight() { return _conn.controller?.ctrlRight ?? 0; }
 
+// ── cancel any in-flight blocking command ─────────────────────────────────────
+// Resolves pending promises immediately so Python gets control back from await.
+
+function legoCancelPending() {
+  for (const dev of Object.values(_conn)) {
+    if (dev?.pending) {
+      clearTimeout(dev.pending.timer);
+      const p = dev.pending;
+      dev.pending = null;
+      p.resolve(null);
+    }
+  }
+}
+
 // ── stop all motors on all connected devices ───────────────────────────────────
 
 async function legoStopAll() {
+  legoCancelPending();
   const tasks = [];
   if (_conn.doubleMotor) {
     tasks.push(_sendTo(_conn.doubleMotor, [MOVEMENT_STOP_COMMAND]).catch(() => {}));
