@@ -141,7 +141,7 @@
 
     #stop:hover { background: #ff8069; }
 
-    #connect-btn {
+    .connect-btn {
       margin: 10px 14px 14px;
       background: #bd93f9;
       color: #1e1f29;
@@ -154,7 +154,7 @@
       font-family: verdana;
       letter-spacing: 0.03em;
     }
-    #connect-btn:hover { opacity: 0.85; }
+    .connect-btn:hover { opacity: 0.85; }
 
     #output {
       background: #282a36;
@@ -502,7 +502,10 @@
     <button class="tab-button" onclick="switchTab(event, 'tab4')"><strong>Controller Functions</strong><img class="button-img" id="c" src="images/c.png"></button>
     <button class="tab-button" onclick="switchTab(event, 'tab5')"><strong>Color Sensor Functions</strong><img class="button-img" id="cs" src="images/cs.png"></button>
     <button class="tab-button" onclick="switchTab(event, 'tab6')"><strong>General Python tips!</strong></button>
-    <button id="connect-btn" onclick="handleConnect()">○ Connect to LEGO</button>
+    <button id="connect-btn-singleMotor" class="connect-btn" onclick="handleConnect('singleMotor')">○ Connect Single Motor</button>
+    <button id="connect-btn-doubleMotor" class="connect-btn" onclick="handleConnect('doubleMotor')">○ Connect Double Motor</button>
+    <button id="connect-btn-controller" class="connect-btn" onclick="handleConnect('controller')">○ Connect Controller</button>
+    <button id="connect-btn-colorSensor" class="connect-btn" onclick="handleConnect('colorSensor')">○ Connect Color Sensor</button>
     </div>
     <!-- Tab content -->
     <div class="tab-content-area">
@@ -565,8 +568,10 @@ c.drive(dm)
         <p>Stop the motor<pre><code>sm.stop()</code></pre></p>
         <p>Set the motor speed<pre><code>sm.set_speed(speed)</code></pre></p>
         <p>Run the motor<pre><code>sm.run()</code></pre></p>
+        <p>Run the motor to an absolute position (0-359 degrees)<pre><code>sm.run_to(degrees)</code></pre></p>
         <p>See a plot of the motor's position<pre><code>sm.plot()</code></pre></p>
-           
+        <p>Get the motor's current position<pre><code>sm.position()</code></pre></p>
+
     </div>
     
     <div id="tab3" class="tabcontent">
@@ -576,13 +581,17 @@ c.drive(dm)
         <p>Run the motors for this many milliseconds <pre><code>dm.run_time(time)</code></pre></p>
         <p>Run the left motor (<em>Try adding a number inside of the parenthesis! What happens?</em>)<pre><code>dm.run_left()</code></pre></p>
         <p>Run the right motor (<em>Try adding a number inside of the parenthesis! What happens?</em>)<pre><code>dm.run_right()</code></pre></p>
+        <p>Run the left motor to an absolute position (0-359 degrees)<pre><code>dm.run_left_to(degrees)</code></pre></p>
+        <p>Run the right motor to an absolute position (0-359 degrees)<pre><code>dm.run_right_to(degrees)</code></pre></p>
         <p>Set the motor speed <pre><code>dm.set_speed(speed)</code></pre></p>
         <p>Set the left motor speed <pre><code>dm.set_speed_left(speed)</code></pre></p>
         <p>Set the right motor speed<pre><code>dm.set_speed_right(speed)</code></pre></p>
         <p>Stop the motors<pre><code>dm.stop()</code></pre></p>
         <p>See a plot of the left motor's position<pre><code>dm.plot_left()</code></pre></p>
         <p>See a plot of the right motor's position<pre><code>dm.plot_right()</code></pre></p>
-        
+        <p>Get the left motor's current position<pre><code>dm.left_position()</code></pre></p>
+        <p>Get the right motor's current position<pre><code>dm.right_position()</code></pre></p>
+
         <div class="image-container" style="display:flex;align-items:center;gap:16px;">
           <h4 style="margin:0;">Did you build a car?</h4>
           <img id="legocar" src="images/legocar.png">
@@ -701,6 +710,8 @@ color = cs.detect_color()
         { name: "run_time",        sig: "(time=2000)" },
         { name: "run_left",        sig: "(degrees=None)" },
         { name: "run_right",       sig: "(degrees=None)" },
+        { name: "run_left_to",     sig: "(degrees=90)" },
+        { name: "run_right_to",    sig: "(degrees=90)" },
         { name: "turn_left",       sig: "(degrees=90)" },
         { name: "turn_right",      sig: "(degrees=90)" },
         { name: "set_speed",       sig: "(speed)" },
@@ -709,13 +720,17 @@ color = cs.detect_color()
         { name: "stop",            sig: "()" },
         { name: "plot_left",       sig: "()" },
         { name: "plot_right",      sig: "()" },
+        { name: "left_position",   sig: "()" },
+        { name: "right_position",  sig: "()" },
       ],
       singleMotor: [
         { name: "spin",      sig: "(rotations=1)" },
         { name: "stop",      sig: "()" },
         { name: "set_speed", sig: "(speed)" },
         { name: "run",       sig: "()" },
+        { name: "run_to",    sig: "(degrees=90)" },
         { name: "plot",      sig: "()" },
+        { name: "position",  sig: "()" },
       ],
       colorSensor: [
         { name: "detect_color", sig: "()" },
@@ -913,6 +928,10 @@ DOUBLE MOTOR (dm = doubleMotor())
     — Run the left motor continuously, or for N degrees if specified.
   dm.run_right(degrees=None)
     — Run the right motor continuously, or for N degrees if specified.
+  dm.run_left_to(degrees=90)
+    — Rotate the left motor to an absolute position (0-359°), taking the shortest path.
+  dm.run_right_to(degrees=90)
+    — Rotate the right motor to an absolute position (0-359°), taking the shortest path.
   dm.turn_left(degrees=90)
     — Turn the car left by N degrees using the IMU. Default 90°.
   dm.turn_right(degrees=90)
@@ -929,18 +948,26 @@ DOUBLE MOTOR (dm = doubleMotor())
     — Show a live position graph of the left motor.
   dm.plot_right()
     — Show a live position graph of the right motor.
+  dm.left_position()
+    — Returns the left motor's current absolute position (0-359°) as an integer.
+  dm.right_position()
+    — Returns the right motor's current absolute position (0-359°) as an integer.
 
 SINGLE MOTOR (sm = singleMotor())
   sm.spin(rotations=1)
     — Spin the motor N full rotations (360° each). Default 1.
   sm.run()
     — Run the motor continuously. Use wait() then sm.stop().
+  sm.run_to(degrees=90)
+    — Rotate the motor to an absolute position (0-359°), taking the shortest path.
   sm.set_speed(speed)
     — Set motor speed (0–100).
   sm.stop()
     — Stop the motor.
   sm.plot()
     — Show a live position graph of the motor.
+  sm.position()
+    — Returns the motor's current absolute position (0-359°) as an integer.
 
 COLOR SENSOR (cs = colorSensor())
   cs.detect_color()
@@ -981,6 +1008,11 @@ from js import (
     motorSetSpeed as _mSpd, motorRun as _mRun,
     motorRunForDegrees as _mDeg, motorRunForTime as _mTime,
     motorStop as _mStop,
+    motorRunToAbsolutePosition as _mPos,
+    getLeftPosition as _gLPos, getRightPosition as _gRPos,
+    singleMotorSetSpeed as _smSpd, singleMotorRun as _smRun,
+    singleMotorRunForDegrees as _smDeg, singleMotorRunToAbsolutePosition as _smPos,
+    singleMotorStop as _smStop, getSinglePosition as _gSPos,
     getLastColor as _gColor,
     getControllerLeft as _gLeft, getControllerRight as _gRight,
 )
@@ -990,8 +1022,9 @@ _MOVE_FWD = 0   # MOVEMENT_MOVE_DIRECTION_FORWARD
 _MOVE_BWD = 1   # MOVEMENT_MOVE_DIRECTION_BACKWARD
 _TURN_L   = 2   # MOVEMENT_TURN_DIRECTION_LEFT
 _TURN_R   = 3   # MOVEMENT_TURN_DIRECTION_RIGHT
-_MOTOR_CW  = 0  # MOTOR_MOVE_DIRECTION_CLOCKWISE
-_MOTOR_CCW = 1  # MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE
+_MOTOR_CW    = 0  # MOTOR_MOVE_DIRECTION_CLOCKWISE
+_MOTOR_CCW   = 1  # MOTOR_MOVE_DIRECTION_COUNTERCLOCKWISE
+_MOTOR_SHORT = 2  # MOTOR_MOVE_DIRECTION_SHORTEST — used by run_to()/run_left_to()/run_right_to()
 _ML = 1         # MOTOR_BITS_LEFT
 _MR = 2         # MOTOR_BITS_RIGHT
 
@@ -1035,13 +1068,18 @@ class singleMotor:
     def set_speed(self, s): self._speed = int(max(0, min(100, s)))
     async def spin(self, rotations=1):
         _check_stop()
-        await _mSpd(_ML, self._speed)
-        await _mDeg(_ML, int(rotations * 360), _MOTOR_CW)
+        await _smSpd(self._speed)
+        await _smDeg(int(rotations * 360), _MOTOR_CW)
     async def run(self):
         _check_stop()
-        await _mSpd(_ML, self._speed)
-        await _mRun(_ML, _MOTOR_CW)
-    async def stop(self): await _mStop(_ML)
+        await _smSpd(self._speed)
+        await _smRun(_MOTOR_CW)
+    async def run_to(self, degrees=90):
+        _check_stop()
+        await _smSpd(self._speed)
+        await _smPos(int(degrees), _MOTOR_SHORT)
+    async def stop(self): await _smStop()
+    def position(self): return int(_gSPos())
     def plot(self):
         self._pctr[0] = 0
         asyncio.ensure_future(_plot_loop('sm', self._pctr))
@@ -1050,8 +1088,10 @@ class doubleMotor:
     def __init__(self): self._speed = 50; self._lctr = [0]; self._rctr = [0]
     def connect(self, card_serial=None, card_color=None): pass
     def set_speed(self, s): self._speed = int(max(0, min(100, s)))
-    def set_speed_left(self, s): pass
-    def set_speed_right(self, s): pass
+    async def set_speed_left(self, s):
+        await _mSpd(_ML, int(max(0, min(100, s))))
+    async def set_speed_right(self, s):
+        await _mSpd(_MR, int(max(0, min(100, s))))
     async def move_steps(self, step=1):
         _check_stop()
         await _mvSpd(self._speed)
@@ -1074,6 +1114,14 @@ class doubleMotor:
         await _mSpd(_MR, self._speed)
         if degrees is None: await _mRun(_MR, _MOTOR_CCW)
         else: await _mDeg(_MR, int(degrees), _MOTOR_CCW)
+    async def run_left_to(self, degrees=90):
+        _check_stop()
+        await _mSpd(_ML, self._speed)
+        await _mPos(_ML, int(degrees), _MOTOR_SHORT)
+    async def run_right_to(self, degrees=90):
+        _check_stop()
+        await _mSpd(_MR, self._speed)
+        await _mPos(_MR, int(degrees), _MOTOR_SHORT)
     async def turn_left(self, degrees=90):
         _check_stop()
         await _mvSpd(self._speed)
@@ -1093,6 +1141,8 @@ class doubleMotor:
     def plot_right(self):
         self._rctr[0] = 0
         asyncio.ensure_future(_plot_loop('dm_right', self._rctr))
+    def left_position(self): return int(_gLPos())
+    def right_position(self): return int(_gRPos())
 
 class colorSensor:
     # Color index → name (legoeducation LegoColor enum)
@@ -1125,7 +1175,9 @@ class controller:
 import ast as _ast
 
 _ASYNC_METHODS = {'run', 'stop', 'spin', 'move_steps', 'run_time',
-                   'run_left', 'run_right', 'turn_left', 'turn_right'}
+                   'run_left', 'run_right', 'turn_left', 'turn_right',
+                   'run_to', 'run_left_to', 'run_right_to',
+                   'set_speed_left', 'set_speed_right'}
 
 def _is_intrinsic_await(call):
     f = call.func
@@ -1244,15 +1296,20 @@ def _auto_await(code):
 
     // ── LEGO connect button ────────────────────────────────────────────────────
     // Clicking always opens the picker — can be clicked once per card to add devices.
-    async function handleConnect() {
+    async function handleConnect(type) {
       const output = document.getElementById('output');
+      const label = { doubleMotor: 'Double Motor', singleMotor: 'Single Motor',
+                      colorSensor: 'Color Sensor', controller: 'Controller' }[type];
+      if (isConnConnected(type)) {
+        legoDisconnectType(type);
+        output.textContent = `${label} disconnected.`;
+        output.className = '';
+        return;
+      }
       try {
         output.textContent = 'Opening Bluetooth device picker…';
         output.className = '';
-        const deviceType = await legoConnect();
-        const label = { doubleMotor: 'Double Motor', singleMotor: 'Single Motor',
-                        colorSensor: 'Color Sensor', controller: 'Controller',
-                        unknown: 'Unknown device' }[deviceType] || deviceType;
+        await legoConnect(type);
         output.textContent = `${label} connected! Write code and click ▶ Run.`;
         output.className = 'success';
       } catch (err) {

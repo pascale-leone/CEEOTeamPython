@@ -34,6 +34,11 @@ class doubleMotor(le.DoubleMotor):
     def run_time(self, time=2000):
         self.movement_move_for_time(time)
 
+    def run_left_to(self, degrees=90):
+        self.motor_run_to_absolute_position(degrees, motor=le.MOTOR_LEFT)
+
+    def run_right_to(self, degrees=90):
+        self.motor_run_to_absolute_position(degrees, motor=le.MOTOR_RIGHT)
     
     def run_left(self, degrees=None):
         if degrees is None:
@@ -115,3 +120,9 @@ class doubleMotor(le.DoubleMotor):
 
         t = threading.Thread(target=_sample, daemon=True)
         t.start()
+
+    def left_position(self):
+        return self.motor[le.MOTOR_LEFT].absolutePosition
+    
+    def right_position(self):
+        return self.motor[le.MOTOR_RIGHT].absolutePosition

@@ -17,6 +17,7 @@ const MOTOR_RUN_FOR_DEGREES_COMMAND     = 124;
 const MOTOR_RUN_FOR_TIME_COMMAND        = 126;
 const MOTOR_STOP_COMMAND                = 138;
 const MOTOR_SET_SPEED_COMMAND           = 140;
+const MOTOR_RUN_TO_ABSOLUTE_POSITION_COMMAND = 128;
 const MOVEMENT_MOVE_COMMAND             = 150;
 const MOVEMENT_MOVE_FOR_TIME_COMMAND    = 152;
 const MOVEMENT_MOVE_FOR_DEGREES_COMMAND = 154;
@@ -67,6 +68,7 @@ function _makeDevState(rx, bleDevice) {
     lastColor:   -1,
     ctrlLeft:    0,
     ctrlRight:   0,
+    motorPos:    {},     // motorBitMask -> last-reported absolutePosition (0-359)
   };
 }
 
@@ -93,26 +95,34 @@ function _u16LE(n) {
 
 // ── UI ─────────────────────────────────────────────────────────────────────────
 
+const _TYPE_LABELS = {
+  singleMotor: 'Single Motor',
+  doubleMotor: 'Double Motor',
+  controller:  'Controller',
+  colorSensor: 'Color Sensor',
+};
+
 function _updateConnectUI() {
-  const btn = document.getElementById('connect-btn');
-  if (!btn) return;
-  const labels = [];
-  if (_conn.doubleMotor) labels.push('Motor ●');
-  if (_conn.singleMotor) labels.push('Single ●');
-  if (_conn.colorSensor) labels.push('Sensor ●');
-  if (_conn.controller)  labels.push('Controller ●');
-  if (labels.length === 0) {
-    btn.textContent = '○ Connect to LEGO';
-    btn.style.background = '#bd93f9';
-    btn.style.color = '#f8f8f2';
-  } else {
-    btn.textContent = '+ Connect  |  ' + labels.join('  ');
-    btn.style.background = '#50fa7b';
-    btn.style.color = '#1e1f29';
+  for (const [type, label] of Object.entries(_TYPE_LABELS)) {
+    const btn = document.getElementById('connect-btn-' + type);
+    if (!btn) continue;
+    if (_conn[type]) {
+      btn.textContent = `● ${label} — click to disconnect`;
+      btn.style.background = '#50fa7b';
+      btn.style.color = '#1e1f29';
+    } else {
+      btn.textContent = `○ Connect ${label}`;
+      btn.style.background = '#bd93f9';
+      btn.style.color = '#f8f8f2';
+    }
   }
   window._legoConnected = !!(
     _conn.doubleMotor || _conn.singleMotor || _conn.colorSensor || _conn.controller
   );
+}
+
+function isConnConnected(type) {
+  return !!_conn[type];
 }
 
 // ── notification handler (one per connected device) ───────────────────────────
@@ -159,6 +169,9 @@ function _makeNotifyHandler(dev) {
       innerLen -= 1;
 
       if (innerType === MOTOR_NOTIFICATION && offset + 12 <= d.length) {
+        // MotorNotification wire format: <BBHhblb> = motorBitMask, motorState,
+        // absolutePosition(uint16), power, speed, position, gesture.
+        dev.motorPos[d[offset]] = dv.getUint16(offset + 2, true);
         offset   += 12; innerLen -= 12;
 
       } else if (innerType === COLOR_SENSOR_NOTIFICATION && offset + 12 <= d.length) {
@@ -181,7 +194,7 @@ function _makeNotifyHandler(dev) {
 // ── connection ─────────────────────────────────────────────────────────────────
 // Must be called from a user gesture (button click). Detects device type automatically.
 
-async function legoConnect() {
+async function legoConnect(expectedType) {
   if (!navigator.bluetooth) {
     throw new Error('Web Bluetooth not available — use Chrome or Edge');
   }
@@ -215,8 +228,15 @@ async function legoConnect() {
     deviceType = _PGD_TO_TYPE[pgd] || 'unknown';
   }
 
+  if (expectedType && deviceType !== expectedType) {
+    bleDevice.gatt.disconnect();
+    const gotLabel  = _TYPE_LABELS[deviceType] || 'an unrecognized device';
+    const wantLabel = _TYPE_LABELS[expectedType] || expectedType;
+    throw new Error(`Expected a ${wantLabel} but selected device is ${gotLabel}. Please try again and select the ${wantLabel} card.`);
+  }
+
   // Replace any prior connection of the same type
-  if (_conn[deviceType]?._device?.gatt?.connected) {
+  if (_conn[deviceType]?.bleDevice?.gatt?.connected) {
     _conn[deviceType].bleDevice.gatt.disconnect();
   }
   if (deviceType !== 'unknown') {
@@ -245,6 +265,13 @@ async function legoDisconnect() {
     if (dev?.bleDevice?.gatt?.connected) dev.bleDevice.gatt.disconnect();
     _conn[type] = null;
   }
+  _updateConnectUI();
+}
+
+function legoDisconnectType(type) {
+  const dev = _conn[type];
+  if (dev?.bleDevice?.gatt?.connected) dev.bleDevice.gatt.disconnect();
+  _conn[type] = null;
   _updateConnectUI();
 }
 
@@ -305,6 +332,48 @@ async function motorRunForTime(motorBitMask, timeMs, direction) {
 async function motorStop(motorBitMask) {
   await _sendTo(_getConn('doubleMotor'), [MOTOR_STOP_COMMAND, motorBitMask]);
 }
+
+function _degreesToU16(degrees) {
+  return ((Math.round(degrees) % 360) + 360) % 360;
+}
+
+async function motorRunToAbsolutePosition(motorBitMask, degrees, direction) {
+  const dev = _getConn('doubleMotor');
+  await _sendAwaitOn(dev, [MOTOR_RUN_TO_ABSOLUTE_POSITION_COMMAND, motorBitMask, ..._u16LE(_degreesToU16(degrees)), direction], 30000);
+}
+
+function getLeftPosition()  { return _conn.doubleMotor?.motorPos?.[MOTOR_BITS_LEFT]  ?? 0; }
+function getRightPosition() { return _conn.doubleMotor?.motorPos?.[MOTOR_BITS_RIGHT] ?? 0; }
+
+// ── single motor card commands (singleMotor card — its own separate BLE device) ────
+// NOTE: these must target _getConn('singleMotor'), not 'doubleMotor' — the single
+// motor card is a distinct physical BLE peripheral from the double motor card.
+
+async function singleMotorSetSpeed(speed) {
+  const dev = _getConn('singleMotor');
+  speed = Math.max(-100, Math.min(100, Math.round(speed)));
+  await _sendTo(dev, [MOTOR_SET_SPEED_COMMAND, MOTOR_BITS_LEFT, _i8(speed)]);
+}
+
+async function singleMotorRun(direction) {
+  await _sendTo(_getConn('singleMotor'), [MOTOR_RUN_COMMAND, MOTOR_BITS_LEFT, direction]);
+}
+
+async function singleMotorRunForDegrees(degrees, direction) {
+  const dev = _getConn('singleMotor');
+  await _sendAwaitOn(dev, [MOTOR_RUN_FOR_DEGREES_COMMAND, MOTOR_BITS_LEFT, ..._i32LE(Math.abs(degrees)), direction], 30000);
+}
+
+async function singleMotorRunToAbsolutePosition(degrees, direction) {
+  const dev = _getConn('singleMotor');
+  await _sendAwaitOn(dev, [MOTOR_RUN_TO_ABSOLUTE_POSITION_COMMAND, MOTOR_BITS_LEFT, ..._u16LE(_degreesToU16(degrees)), direction], 30000);
+}
+
+async function singleMotorStop() {
+  await _sendTo(_getConn('singleMotor'), [MOTOR_STOP_COMMAND, MOTOR_BITS_LEFT]);
+}
+
+function getSinglePosition() { return _conn.singleMotor?.motorPos?.[MOTOR_BITS_LEFT] ?? 0; }
 
 // ── coordinated movement commands (doubleMotor card) ──────────────────────────
 
@@ -375,8 +444,11 @@ async function legoStopAll() {
 // ── exports ───────────────────────────────────────────────────────────────────
 
 Object.assign(window, {
-  legoConnect, legoDisconnect, legoStopAll,
+  legoConnect, legoDisconnect, legoDisconnectType, isConnConnected, legoStopAll,
   motorSetSpeed, motorRun, motorRunForDegrees, motorRunForTime, motorStop,
+  motorRunToAbsolutePosition, getLeftPosition, getRightPosition,
+  singleMotorSetSpeed, singleMotorRun, singleMotorRunForDegrees,
+  singleMotorRunToAbsolutePosition, singleMotorStop, getSinglePosition,
   movementSetSpeed, movementMove, movementMoveForDegrees,
   movementMoveForTime, movementStop, movementTurnForDegrees,
   getLastColor, getControllerLeft, getControllerRight,

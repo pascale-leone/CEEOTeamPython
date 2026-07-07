@@ -34,6 +34,10 @@ class singleMotor(le.SingleMotor):
     def run(self):
         self.motor_run()
 
+    def run_to(self, degrees=90):
+        self.motor_run_to_absolute_position(degrees)
+    
+
     def plot(self):
         stop_event = threading.Event()
         self._plot_stop_event = stop_event
@@ -49,3 +53,6 @@ class singleMotor(le.SingleMotor):
 
         t = threading.Thread(target=_sample, daemon=True)
         t.start()
+
+    def position(self):
+        return self.motor.absolutePosition
