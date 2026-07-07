@@ -1002,6 +1002,18 @@ teal=4; azure=4; yellow=7; white=10; black=0; pink=1
 def _plot(channel, x, y):
     sys.stdout.write(f"\\x00PLOT\\x00{json.dumps({'channel':channel,'x':x,'y':y})}\\n")
 
+async def _plot_loop(channel, counter):
+    # Pyodide (this non-worker build) has no real OS threads — threading.Thread.start()
+    # raises "RuntimeError: can't start new thread". Sample via a background asyncio
+    # task instead, which cooperates with the same event loop driving the rest of the
+    # script (e.g. wait()'s asyncio.sleep calls), so it keeps sampling while other
+    # code runs and stops cleanly when the Stop button sets window._pyStop.
+    from js import window
+    while not getattr(window, '_pyStop', False):
+        _plot(channel, counter[0], 0)
+        counter[0] += 1
+        await asyncio.sleep(0.05)
+
 def _check_stop():
     from js import window
     if getattr(window, '_pyStop', False):
@@ -1031,11 +1043,8 @@ class singleMotor:
         await _mRun(_ML, _MOTOR_CW)
     async def stop(self): await _mStop(_ML)
     def plot(self):
-        import threading, time
         self._pctr[0] = 0
-        def _s():
-            while True: _plot('sm', self._pctr[0], 0); self._pctr[0] += 1; time.sleep(0.05)
-        threading.Thread(target=_s, daemon=True).start()
+        asyncio.ensure_future(_plot_loop('sm', self._pctr))
 
 class doubleMotor:
     def __init__(self): self._speed = 50; self._lctr = [0]; self._rctr = [0]
@@ -1079,17 +1088,11 @@ class doubleMotor:
         await _mSpd(_ML, abs(lp)); await _mRun(_ML, _MOTOR_CW if lp >= 0 else _MOTOR_CCW)
         await _mSpd(_MR, abs(rp)); await _mRun(_MR, _MOTOR_CW if rp >= 0 else _MOTOR_CCW)
     def plot_left(self):
-        import threading, time
         self._lctr[0] = 0
-        def _s():
-            while True: _plot('dm_left', self._lctr[0], 0); self._lctr[0] += 1; time.sleep(0.05)
-        threading.Thread(target=_s, daemon=True).start()
+        asyncio.ensure_future(_plot_loop('dm_left', self._lctr))
     def plot_right(self):
-        import threading, time
         self._rctr[0] = 0
-        def _s():
-            while True: _plot('dm_right', self._rctr[0], 0); self._rctr[0] += 1; time.sleep(0.05)
-        threading.Thread(target=_s, daemon=True).start()
+        asyncio.ensure_future(_plot_loop('dm_right', self._rctr))
 
 class colorSensor:
     # Color index → name (legoeducation LegoColor enum)

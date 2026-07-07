@@ -7,18 +7,6 @@ const SERVICE_UUID = '0000fd02-0000-1000-8000-00805f9b34fb';
 const WRITE_UUID   = '0000fd02-0001-1000-8000-00805f9b34fb';
 const NOTIFY_UUID  = '0000fd02-0002-1000-8000-00805f9b34fb';
 
-// ── temporary debug logging ─────────────────────────────────────────────────
-// Prints every outgoing command and every incoming BLE packet while a command
-// is pending a response, so we can see the real device's protocol behavior in
-// the browser console. Remove once the blocking-move timing issue is diagnosed.
-window._legoDebug = true;
-function _hex(bytes) {
-  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(' ');
-}
-function _dbg(...args) {
-  if (window._legoDebug) console.log('[lego]', (performance.now() / 1000).toFixed(3) + 's', ...args);
-}
-
 // RPC message type IDs
 const INFO_REQUEST                      = 0;
 const INFO_RESPONSE                     = 1;
@@ -136,10 +124,6 @@ function _makeNotifyHandler(dev) {
     if (!d.length) return;
     const msgType = d[0];
 
-    if (dev.pending) {
-      _dbg('recv while pending(ackType=' + dev.pending.ackType + '):', 'msgType=' + msgType, _hex(d));
-    }
-
     // INFO_RESPONSE (type 1) — 17 bytes: [1, rpcMaj, rpcMin, rpcBuild(2), fwMaj, fwMin,
     //   fwBuild(2), blMaj, blMin, blBuild(2), maxPktSize(2), productGroupDevice(2)]
     if (msgType === INFO_RESPONSE && dev.infoResolve) {
@@ -158,7 +142,6 @@ function _makeNotifyHandler(dev) {
     // isn't exactly MOTOR_STATE_READY — that extra wait was unnecessary and buggy;
     // the ACK alone is already the completion signal.)
     if (dev.pending && dev.pending.ackType === msgType) {
-      _dbg('ACK matched for ackType=' + msgType);
       clearTimeout(dev.pending.timer);
       const p = dev.pending; dev.pending = null;
       p.resolve(d);
@@ -176,9 +159,6 @@ function _makeNotifyHandler(dev) {
       innerLen -= 1;
 
       if (innerType === MOTOR_NOTIFICATION && offset + 12 <= d.length) {
-        if (dev.pending) {
-          _dbg('  motor notif: bitMask=' + d[offset] + ' state=' + d[offset + 1]);
-        }
         offset   += 12; innerLen -= 12;
 
       } else if (innerType === COLOR_SENSOR_NOTIFICATION && offset + 12 <= d.length) {
@@ -281,19 +261,14 @@ function _getConn(type) {
 }
 
 async function _sendTo(dev, bytes) {
-  _dbg('write (fire-and-forget):', _hex(bytes));
   await dev.rx.writeValueWithoutResponse(new Uint8Array(bytes));
 }
 
 async function _sendAwaitOn(dev, bytes, timeoutMs = 5000) {
   const ackType = bytes[0] + 1;
-  _dbg('write (awaiting ackType=' + ackType + ', timeoutMs=' + timeoutMs + '):', _hex(bytes));
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      if (dev.pending?.ackType === ackType) {
-        _dbg('TIMED OUT waiting for ackType=' + ackType + ' after ' + timeoutMs + 'ms');
-        dev.pending = null;
-      }
+      if (dev.pending?.ackType === ackType) dev.pending = null;
       resolve(null);
     }, timeoutMs);
     dev.pending = { ackType, resolve, reject, timer };
