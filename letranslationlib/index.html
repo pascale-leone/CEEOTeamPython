@@ -1002,10 +1002,21 @@ async def _plot_loop(channel, counter):
         counter[0] += 1
         await asyncio.sleep(0.05)
 
+class _Stopped(BaseException):
+    # Deliberately BaseException (not Exception), so a student's bare
+    # 'except Exception:' doesn't swallow the stop signal — same property
+    # KeyboardInterrupt had. But NOT KeyboardInterrupt/SystemExit themselves:
+    # asyncio's Task machinery specially re-raises those two out of the
+    # event-loop's callback-processing step (crashing the whole shared loop,
+    # not just this task) — see cpython asyncio/tasks.py
+    # Task.__step_run_and_handle_result. A distinct BaseException subclass
+    # takes the normal "store on the task, raise on await" path instead.
+    pass
+
 def _check_stop():
     from js import window
     if getattr(window, '_pyStop', False):
-        raise KeyboardInterrupt
+        raise _Stopped()
 
 async def wait(seconds):
     total = float(seconds)
@@ -1265,6 +1276,11 @@ def _auto_await(code):
     let pyodide = null;
     let pyodideReady = false;
     const runBtn = document.getElementById('run');
+    // Bumped on every Run click; lets a run's own catch/finally recognize when
+    // it's been superseded by a newer Run (e.g. after Stop -> Run in quick
+    // succession) so its late-settling promise can't clobber the newer run's
+    // output/button state.
+    let activeRunToken = 0;
 
     async function initPyodide() {
       try {
@@ -1339,6 +1355,7 @@ def _auto_await(code):
       destroyPlot();
       window._pyStop = false;
       runBtn.disabled = true;
+      const myRunToken = ++activeRunToken;
 
       try {
         pyodide.runPython(`import sys, io; _buf = io.StringIO(); sys.stdout = _buf`);
@@ -1353,21 +1370,27 @@ def _auto_await(code):
             displayOut += line + '\n';
           }
         }
-        output.textContent = displayOut.trim() || 'Done';
-        output.className = 'success';
+        if (myRunToken === activeRunToken) {
+          output.textContent = displayOut.trim() || 'Done';
+          output.className = 'success';
+        }
       } catch (err) {
         try { pyodide.runPython(`sys.stdout = sys.__stdout__`); } catch (_) {}
-        if (err.message && err.message.includes('KeyboardInterrupt')) {
-          output.textContent = 'Stopped.';
-          output.className = '';
-        } else {
-          const clean = (err.message || '')
-            .split('\n').filter(l => !l.match(/^\s+at /)).join('\n').trim();
-          output.textContent = clean || err.message;
-          output.className = 'error';
+        if (myRunToken === activeRunToken) {
+          if (err.message && err.message.includes('_Stopped')) {
+            output.textContent = 'Stopped.';
+            output.className = '';
+          } else {
+            const clean = (err.message || '')
+              .split('\n').filter(l => !l.match(/^\s+at /)).join('\n').trim();
+            output.textContent = clean || err.message;
+            output.className = 'error';
+          }
         }
       } finally {
-        runBtn.disabled = false;
+        if (myRunToken === activeRunToken) {
+          runBtn.disabled = false;
+        }
         if (window.legoStopAll) legoStopAll().catch(() => {});
       }
     });
@@ -1375,6 +1398,11 @@ def _auto_await(code):
     // ── Stop button ────────────────────────────────────────────────────────────
     document.getElementById("stop").addEventListener("click", () => {
       window._pyStop = true;
+      // Free up the UI immediately rather than waiting for the interrupted
+      // run's promise to settle — a loop stuck mid-await on a slow/unresponsive
+      // BLE call won't reach its next stop-check for a while (or ever), which
+      // would otherwise leave the Run button disabled indefinitely.
+      runBtn.disabled = false;
       destroyPlot();
       document.getElementById("output").textContent = 'Stopped.';
       document.getElementById("output").className = '';
