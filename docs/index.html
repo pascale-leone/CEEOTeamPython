@@ -13,6 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -181,6 +182,35 @@
         padding: 1em 1em;
         display: block;
         word-wrap: break-word;
+        position: relative;
+    }
+
+    .code-copy-btn {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background: #fff;
+        color: #333;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-family: verdana;
+        font-size: 11px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+    pre:hover .code-copy-btn {
+        opacity: 1;
+    }
+    .code-copy-btn:hover {
+        background: #eee;
+    }
+    .code-copy-btn.copied {
+        background: #50fa7b;
+        border-color: #50fa7b;
+        color: #1e1f29;
+        opacity: 1;
     }
 
     .tbl {
@@ -754,7 +784,9 @@ color = cs.detect_color()
       extraKeys: {
         "Tab": cm => cm.execCommand("indentMore"),
         "Shift-Tab": cm => cm.execCommand("indentLess"),
-        "Ctrl-Space": cm => CodeMirror.showHint(cm, legoHint, { completeSingle: false })
+        "Ctrl-Space": cm => CodeMirror.showHint(cm, legoHint, { completeSingle: false }),
+        "Ctrl-/": "toggleComment",
+        "Cmd-/": "toggleComment"
       }
     });
 
@@ -762,6 +794,26 @@ color = cs.detect_color()
       if (change.text[0] === ".") {
         CodeMirror.showHint(cm, legoHint, { completeSingle: false });
       }
+    });
+
+    document.querySelectorAll(".tab-content-area pre").forEach(pre => {
+      const codeEl = pre.querySelector("code");
+      if (!codeEl) return;
+      const btn = document.createElement("button");
+      btn.className = "code-copy-btn";
+      btn.type = "button";
+      btn.textContent = "Copy";
+      btn.addEventListener("click", () => {
+        navigator.clipboard.writeText(codeEl.textContent.trim()).then(() => {
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy";
+            btn.classList.remove("copied");
+          }, 1500);
+        });
+      });
+      pre.prepend(btn);
     });
 
     const plotCharts = {};
