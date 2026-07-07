@@ -30,6 +30,20 @@ const MOTOR_NOTIFICATION        = 10;
 const COLOR_SENSOR_NOTIFICATION = 12;
 const CONTROLLER_NOTIFICATION   = 15;
 
+// Byte sizes (payload only, not counting the 1-byte type prefix) of every inner
+// notification type we might see but don't otherwise care about. A double motor
+// (car) packet interleaves these with MOTOR_NOTIFICATION — e.g. IMU telemetry
+// (type 1) is often sent *before* the motor segments in the same packet, so we
+// must skip over unrecognized-but-known segments rather than bailing out, or
+// we'd never reach the MOTOR_NOTIFICATION segments that follow.
+const _KNOWN_NOTIF_SIZES = {
+  0:  2,   // INFO_DEVICE_NOTIFICATION   <BB>
+  1:  20,  // IMU_DEVICE_NOTIFICATION    <BBhhhhhhhhh>
+  3:  3,   // CARD_NOTIFICATION          <bH>
+  4:  1,   // BUTTON_STATE_NOTIFICATION  <B>
+  16: 1,   // IMU_GESTURE_NOTIFICATION   <b>
+};
+
 const MOTOR_STATE_READY = 0;
 
 const MOTOR_BITS_LEFT  = 1;
@@ -210,6 +224,12 @@ function _makeNotifyHandler(dev) {
         dev.ctrlLeft  = dv.getInt8(offset);
         dev.ctrlRight = dv.getInt8(offset + 1);
         offset   += 6; innerLen -= 6;
+
+      } else if (_KNOWN_NOTIF_SIZES[innerType] !== undefined && offset + _KNOWN_NOTIF_SIZES[innerType] <= d.length) {
+        // A notification type we don't track (IMU, card, button, gesture) — skip
+        // its payload so parsing can continue to any segments after it.
+        const size = _KNOWN_NOTIF_SIZES[innerType];
+        offset += size; innerLen -= size;
 
       } else {
         break;
