@@ -1060,6 +1060,96 @@ class controller:
         for _ in range(int(t)):
             await dm._tank(int(_gLeft()), int(_gRight()))
             await asyncio.sleep(0.1)
+
+# ── auto-await transform ────────────────────────────────────────────────────
+# Lets students write wait(1), dm.run(), etc. without typing 'await'. Rewrites
+# the AST rather than the source text so it correctly handles calls nested in
+# if/for/try blocks *and* promotes a plain 'def' to 'async def' (and awaits its
+# call sites) whenever the function body needs to await something — a plain
+# regex can't do that safely.
+import ast as _ast
+
+_ASYNC_METHODS = {'run', 'stop', 'spin', 'move_steps', 'run_time',
+                   'run_left', 'run_right', 'turn_left', 'turn_right'}
+
+def _is_intrinsic_await(call):
+    f = call.func
+    if isinstance(f, _ast.Name) and f.id == 'wait':
+        return True
+    if isinstance(f, _ast.Attribute):
+        if isinstance(f.value, _ast.Name) and f.value.id in ('dm', 'sm') and f.attr in _ASYNC_METHODS:
+            return True
+        if isinstance(f.value, _ast.Name) and f.value.id == 'c' and f.attr == 'drive':
+            return True
+    return False
+
+def _scoped_calls(node):
+    # Calls belonging to this scope only — don't descend into nested defs/lambdas/classes.
+    for child in _ast.iter_child_nodes(node):
+        if isinstance(child, (_ast.FunctionDef, _ast.AsyncFunctionDef, _ast.Lambda, _ast.ClassDef)):
+            continue
+        if isinstance(child, _ast.Call):
+            yield child
+        yield from _scoped_calls(child)
+
+def _needs_async(fd, async_funcs):
+    for stmt in fd.body:
+        for call in _scoped_calls(stmt):
+            if _is_intrinsic_await(call):
+                return True
+            if isinstance(call.func, _ast.Name) and call.func.id in async_funcs:
+                return True
+    return False
+
+def _find_async_funcs(tree):
+    funcdefs = [n for n in _ast.walk(tree) if isinstance(n, _ast.FunctionDef)]
+    async_funcs = set()
+    changed = True
+    while changed:
+        changed = False
+        for fd in funcdefs:
+            if fd.name not in async_funcs and _needs_async(fd, async_funcs):
+                async_funcs.add(fd.name)
+                changed = True
+    return async_funcs
+
+class _AwaitTransformer(_ast.NodeTransformer):
+    def __init__(self, async_funcs):
+        self.async_funcs = async_funcs
+        self._already_awaited = set()
+    def visit_Await(self, node):
+        # Student already wrote 'await' here — mark the inner call so visit_Call
+        # below doesn't wrap it a second time (which would 'await' the already-
+        # resolved result and crash with "object NoneType can't be awaited").
+        if isinstance(node.value, _ast.Call):
+            self._already_awaited.add(id(node.value))
+        self.generic_visit(node)
+        return node
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        if id(node) in self._already_awaited:
+            return node
+        needs = _is_intrinsic_await(node) or (
+            isinstance(node.func, _ast.Name) and node.func.id in self.async_funcs
+        )
+        return _ast.Await(value=node) if needs else node
+    def visit_FunctionDef(self, node):
+        self.generic_visit(node)
+        if node.name in self.async_funcs:
+            new = _ast.AsyncFunctionDef(**{f: getattr(node, f) for f in node._fields})
+            _ast.copy_location(new, node)
+            return new
+        return node
+
+def _auto_await(code):
+    try:
+        tree = _ast.parse(code)
+    except SyntaxError:
+        return code  # let the real compile step surface the original error/location
+    async_funcs = _find_async_funcs(tree)
+    tree = _AwaitTransformer(async_funcs).visit(tree)
+    _ast.fix_missing_locations(tree)
+    return _ast.unparse(tree)
 `;
 
     // ── Pyodide init ───────────────────────────────────────────────────────────
@@ -1084,13 +1174,17 @@ class controller:
     runBtn.disabled = true;
 
     // ── auto-await transform ───────────────────────────────────────────────────
-    // Adds 'await' before dm/sm method calls and wait() so students don't have to.
-    // Only transforms statement-level calls; does not touch cs.* or c.left_up() etc.
+    // Adds 'await' before dm/sm ASYNC method calls, wait(), and c.drive() so students
+    // don't have to write 'await' themselves. Implemented as a Python AST transform
+    // (see _auto_await in SHIMS) rather than a regex, because it also needs to
+    // promote plain 'def' functions to 'async def' — and await their call sites —
+    // whenever the function body needs to await something.
     function addMissingAwaits(code) {
-      const re = /^(\s*(?:\w+\s*=\s*)?)(await\s+)?((?:dm|sm)\.\w+\s*\(|c\.drive\s*\(|wait\s*\()/gm;
-      return code.replace(re, (match, prefix, existingAwait, call) =>
-        existingAwait ? match : prefix + 'await ' + call
-      );
+      try {
+        return pyodide.globals.get('_auto_await')(code);
+      } catch (err) {
+        return code; // fall back to raw code; the real compiler will surface any error
+      }
     }
 
     // ── LEGO connect button ────────────────────────────────────────────────────
