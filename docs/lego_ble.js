@@ -171,7 +171,19 @@ function _makeNotifyHandler(dev) {
       if (innerType === MOTOR_NOTIFICATION && offset + 12 <= d.length) {
         // MotorNotification wire format: <BBHhblb> = motorBitMask, motorState,
         // absolutePosition(uint16), power, speed, position, gesture.
-        dev.motorPos[d[offset]] = dv.getUint16(offset + 2, true);
+        const _mBitMask = d[offset], _mState = d[offset + 1];
+        const _mPos = dv.getUint16(offset + 2, true);
+        // TEMP DEBUG: log whenever a motor's reported bitmask/state/position
+        // changes, so we can see whether MOTOR_NOTIFICATION is even emitted
+        // while driving via movement-family commands (dm.run()/move_steps()),
+        // vs only while using individual motor commands (run_left, etc).
+        // Remove once position()/left_position()/right_position() are confirmed working live.
+        dev._lastLoggedPos = dev._lastLoggedPos || {};
+        if (dev._lastLoggedPos[_mBitMask] !== _mPos) {
+          dev._lastLoggedPos[_mBitMask] = _mPos;
+          console.log('[lego] motor notif bitMask=' + _mBitMask + ' state=' + _mState + ' absolutePosition=' + _mPos);
+        }
+        dev.motorPos[_mBitMask] = _mPos;
         offset   += 12; innerLen -= 12;
 
       } else if (innerType === COLOR_SENSOR_NOTIFICATION && offset + 12 <= d.length) {
