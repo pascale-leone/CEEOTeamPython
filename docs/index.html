@@ -1197,17 +1197,38 @@ def _is_intrinsic_await(call):
             return True
     return False
 
-def _scoped_calls(node):
-    # Calls belonging to this scope only — don't descend into nested defs/lambdas/classes.
+def _scoped_nodes(node, types):
+    # Nodes of the given type(s) belonging to this scope only — don't descend into nested defs/lambdas/classes.
     for child in _ast.iter_child_nodes(node):
         if isinstance(child, (_ast.FunctionDef, _ast.AsyncFunctionDef, _ast.Lambda, _ast.ClassDef)):
             continue
-        if isinstance(child, _ast.Call):
+        if isinstance(child, types):
             yield child
-        yield from _scoped_calls(child)
+        yield from _scoped_nodes(child, types)
+
+def _scoped_calls(node):
+    yield from _scoped_nodes(node, _ast.Call)
+
+def _scoped_loops(node):
+    # ast.comprehension (the 'for' clause in [x for x in ...]) is a distinct node
+    # type from ast.For, so comprehensions are excluded automatically — await isn't
+    # legal inside them anyway.
+    yield from _scoped_nodes(node, (_ast.While, _ast.For, _ast.AsyncFor))
+
+def _contains_loop(stmt):
+    # _scoped_loops(stmt) only finds loops among stmt's *descendants* — if stmt
+    # is itself a While/For/AsyncFor (a bare loop directly in a function body,
+    # not nested inside an if/try), it wouldn't otherwise be detected.
+    if isinstance(stmt, (_ast.While, _ast.For, _ast.AsyncFor)):
+        return True
+    return any(True for _ in _scoped_loops(stmt))
 
 def _needs_async(fd, async_funcs):
     for stmt in fd.body:
+        if _contains_loop(stmt):
+            # Any while/for loop must be able to yield/check-stop every iteration,
+            # regardless of what it calls — see visit_While/visit_For below.
+            return True
         for call in _scoped_calls(stmt):
             if _is_intrinsic_await(call):
                 return True
@@ -1227,6 +1248,9 @@ def _find_async_funcs(tree):
                 changed = True
     return async_funcs
 
+# Known limitation: a while/for loop written directly in a class body (not inside
+# a method) would get an illegal top-level 'await' injected. Not handled — this
+# pattern doesn't occur in student-facing code.
 class _AwaitTransformer(_ast.NodeTransformer):
     def __init__(self, async_funcs):
         self.async_funcs = async_funcs
@@ -1254,6 +1278,29 @@ class _AwaitTransformer(_ast.NodeTransformer):
             _ast.copy_location(new, node)
             return new
         return node
+    def _inject_yield(self, node):
+        # Unconditionally prepend '_check_stop(); await asyncio.sleep(0)' so every
+        # loop iteration — not just ones calling a whitelisted intrinsic — gives the
+        # browser's event loop (and the Stop button) a chance to run. Only
+        # node.body is touched, never orelse (for/while...else runs once, not
+        # per-iteration); break/continue/return work normally since these are just
+        # ordinary leading statements, not a wrapper.
+        self.generic_visit(node)
+        check = _ast.Expr(value=_ast.Call(
+            func=_ast.Name(id='_check_stop', ctx=_ast.Load()), args=[], keywords=[]))
+        sleep = _ast.Expr(value=_ast.Await(value=_ast.Call(
+            func=_ast.Attribute(value=_ast.Name(id='asyncio', ctx=_ast.Load()), attr='sleep', ctx=_ast.Load()),
+            args=[_ast.Constant(value=0)], keywords=[])))
+        _ast.copy_location(check, node)
+        _ast.copy_location(sleep, node)
+        node.body = [check, sleep] + node.body
+        return node
+    def visit_While(self, node):
+        return self._inject_yield(node)
+    def visit_For(self, node):
+        return self._inject_yield(node)
+    def visit_AsyncFor(self, node):
+        return self._inject_yield(node)
 
 def _auto_await(code):
     try:
