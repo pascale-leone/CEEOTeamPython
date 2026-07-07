@@ -140,13 +140,18 @@
 
     #stop:hover { background: #ff8069; }
 
-    .connect-btn {
+    .connect-btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
       margin: 10px 14px 14px;
+    }
+    .connect-btn {
       background: #bd93f9;
       color: #1e1f29;
       border: none;
-      padding: 10px 14px;
-      font-size: 12px;
+      padding: 10px 8px;
+      font-size: 11px;
       font-weight: bold;
       border-radius: 4px;
       cursor: pointer;
@@ -472,10 +477,12 @@
     <button class="tab-button" onclick="switchTab(event, 'tab4')"><strong>Controller Functions</strong><img class="button-img" id="c" src="images/c.png"></button>
     <button class="tab-button" onclick="switchTab(event, 'tab5')"><strong>Color Sensor Functions</strong><img class="button-img" id="cs" src="images/cs.png"></button>
     <button class="tab-button" onclick="switchTab(event, 'tab6')"><strong>General Python tips!</strong></button>
-    <button id="connect-btn-singleMotor" class="connect-btn" onclick="handleConnect('singleMotor')">○ Connect Single Motor</button>
-    <button id="connect-btn-doubleMotor" class="connect-btn" onclick="handleConnect('doubleMotor')">○ Connect Double Motor</button>
-    <button id="connect-btn-controller" class="connect-btn" onclick="handleConnect('controller')">○ Connect Controller</button>
-    <button id="connect-btn-colorSensor" class="connect-btn" onclick="handleConnect('colorSensor')">○ Connect Color Sensor</button>
+    <div class="connect-btn-grid">
+      <button id="connect-btn-singleMotor" class="connect-btn" onclick="handleConnect('singleMotor')">○ Connect Single Motor</button>
+      <button id="connect-btn-doubleMotor" class="connect-btn" onclick="handleConnect('doubleMotor')">○ Connect Double Motor</button>
+      <button id="connect-btn-controller" class="connect-btn" onclick="handleConnect('controller')">○ Connect Controller</button>
+      <button id="connect-btn-colorSensor" class="connect-btn" onclick="handleConnect('colorSensor')">○ Connect Color Sensor</button>
+    </div>
     </div>
     <!-- Tab content -->
     <div class="tab-content-area">
