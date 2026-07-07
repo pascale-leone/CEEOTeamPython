@@ -62,7 +62,7 @@ function _makeDevState(rx, bleDevice) {
   return {
     rx,
     bleDevice,
-    pending:     null,   // { ackType, motorMask, waitMotor, resolve, reject, timer }
+    pending:     null,   // { ackType, resolve, reject, timer }
     infoResolve: null,   // used once during connect to capture INFO_RESPONSE
     lastColor:   -1,
     ctrlLeft:    0,
@@ -132,8 +132,16 @@ function _makeNotifyHandler(dev) {
       return;
     }
 
-    // ACK (result) for a pending command — result type = command type + 1
-    if (dev.pending && !dev.pending.waitMotor && dev.pending.ackType === msgType) {
+    // ACK (result) for a pending command — result type = command type + 1.
+    // For *_FOR_DEGREES / *_FOR_TIME commands, the hub delays this ACK until the
+    // motor has actually finished moving — confirmed against the official
+    // legoeducation Python package's _send_commands(), which also blocks only on
+    // this same ACK and has no separate "wait for motor ready notification" step.
+    // (We used to *also* wait here for a MOTOR_NOTIFICATION with motorState===READY,
+    // which could sit at its 30s timeout on real hardware whose settled end-state
+    // isn't exactly MOTOR_STATE_READY — that extra wait was unnecessary and buggy;
+    // the ACK alone is already the completion signal.)
+    if (dev.pending && dev.pending.ackType === msgType) {
       clearTimeout(dev.pending.timer);
       const p = dev.pending; dev.pending = null;
       p.resolve(d);
@@ -151,15 +159,6 @@ function _makeNotifyHandler(dev) {
       innerLen -= 1;
 
       if (innerType === MOTOR_NOTIFICATION && offset + 12 <= d.length) {
-        const motorBitMask = d[offset];
-        const motorState   = d[offset + 1];
-        if (dev.pending?.waitMotor &&
-            motorState === MOTOR_STATE_READY &&
-            (motorBitMask & dev.pending.motorMask) !== 0) {
-          clearTimeout(dev.pending.timer);
-          const p = dev.pending; dev.pending = null;
-          p.resolve(d);
-        }
         offset   += 12; innerLen -= 12;
 
       } else if (innerType === COLOR_SENSOR_NOTIFICATION && offset + 12 <= d.length) {
@@ -272,21 +271,10 @@ async function _sendAwaitOn(dev, bytes, timeoutMs = 5000) {
       if (dev.pending?.ackType === ackType) dev.pending = null;
       resolve(null);
     }, timeoutMs);
-    dev.pending = { ackType, motorMask: 0, waitMotor: false, resolve, reject, timer };
+    dev.pending = { ackType, resolve, reject, timer };
     dev.rx.writeValueWithoutResponse(new Uint8Array(bytes)).catch(err => {
       clearTimeout(timer); dev.pending = null; reject(err);
     });
-  });
-}
-
-async function _sendBlockOn(dev, bytes, motorMask, timeoutMs = 30000) {
-  await _sendAwaitOn(dev, bytes);
-  return new Promise(resolve => {
-    const timer = setTimeout(() => {
-      if (dev.pending?.waitMotor) dev.pending = null;
-      resolve(null);
-    }, timeoutMs);
-    dev.pending = { ackType: -1, motorMask, waitMotor: true, resolve, reject: resolve, timer };
   });
 }
 
@@ -304,12 +292,14 @@ async function motorRun(motorBitMask, direction) {
 
 async function motorRunForDegrees(motorBitMask, degrees, direction) {
   const dev = _getConn('doubleMotor');
-  await _sendBlockOn(dev, [MOTOR_RUN_FOR_DEGREES_COMMAND, motorBitMask, ..._i32LE(Math.abs(degrees)), direction], motorBitMask);
+  // The ACK for this command is delayed by the hub until the motor stops moving,
+  // so a generous timeout is just a safety ceiling, not the expected wait time.
+  await _sendAwaitOn(dev, [MOTOR_RUN_FOR_DEGREES_COMMAND, motorBitMask, ..._i32LE(Math.abs(degrees)), direction], 30000);
 }
 
 async function motorRunForTime(motorBitMask, timeMs, direction) {
   const dev = _getConn('doubleMotor');
-  await _sendBlockOn(dev, [MOTOR_RUN_FOR_TIME_COMMAND, motorBitMask, ..._u32LE(timeMs), direction], motorBitMask, timeMs + 5000);
+  await _sendAwaitOn(dev, [MOTOR_RUN_FOR_TIME_COMMAND, motorBitMask, ..._u32LE(timeMs), direction], timeMs + 5000);
 }
 
 async function motorStop(motorBitMask) {
@@ -330,12 +320,12 @@ async function movementMove(direction) {
 
 async function movementMoveForDegrees(degrees, direction) {
   const dev = _getConn('doubleMotor');
-  await _sendBlockOn(dev, [MOVEMENT_MOVE_FOR_DEGREES_COMMAND, ..._i32LE(degrees), direction], MOTOR_BITS_BOTH);
+  await _sendAwaitOn(dev, [MOVEMENT_MOVE_FOR_DEGREES_COMMAND, ..._i32LE(degrees), direction], 30000);
 }
 
 async function movementMoveForTime(timeMs, direction) {
   const dev = _getConn('doubleMotor');
-  await _sendBlockOn(dev, [MOVEMENT_MOVE_FOR_TIME_COMMAND, ..._u32LE(timeMs), direction], MOTOR_BITS_BOTH, timeMs + 5000);
+  await _sendAwaitOn(dev, [MOVEMENT_MOVE_FOR_TIME_COMMAND, ..._u32LE(timeMs), direction], timeMs + 5000);
 }
 
 async function movementStop() {
@@ -344,7 +334,7 @@ async function movementStop() {
 
 async function movementTurnForDegrees(degrees, direction) {
   const dev = _getConn('doubleMotor');
-  await _sendBlockOn(dev, [MOVEMENT_TURN_FOR_DEGREES_COMMAND, ..._i32LE(Math.abs(degrees)), direction], MOTOR_BITS_BOTH);
+  await _sendAwaitOn(dev, [MOVEMENT_TURN_FOR_DEGREES_COMMAND, ..._i32LE(Math.abs(degrees)), direction], 30000);
 }
 
 // ── sensor / controller readers ───────────────────────────────────────────────
