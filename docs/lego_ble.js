@@ -107,7 +107,7 @@ function _updateConnectUI() {
     const btn = document.getElementById('connect-btn-' + type);
     if (!btn) continue;
     if (_conn[type]) {
-      btn.textContent = `● ${label} — click to disconnect`;
+      btn.textContent = `● ${label}`;
       btn.style.background = '#50fa7b';
       btn.style.color = '#1e1f29';
     } else {
