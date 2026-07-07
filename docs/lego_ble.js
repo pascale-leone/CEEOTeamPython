@@ -128,11 +128,21 @@ function isConnConnected(type) {
 // ── notification handler (one per connected device) ───────────────────────────
 
 function _makeNotifyHandler(dev) {
+  // TEMP DEBUG: track every distinct msgType / inner notification type ever seen
+  // on this connection, so we can tell whether DEVICE_NOTIFICATION packets (and
+  // which inner sub-types) actually arrive at all. Remove once diagnosed.
+  dev._seenMsgTypes   = dev._seenMsgTypes   || new Set();
+  dev._seenInnerTypes = dev._seenInnerTypes || new Set();
   return function(evt) {
     const d  = new Uint8Array(evt.target.value.buffer);
     const dv = new DataView(evt.target.value.buffer);
     if (!d.length) return;
     const msgType = d[0];
+
+    if (!dev._seenMsgTypes.has(msgType)) {
+      dev._seenMsgTypes.add(msgType);
+      console.log('[lego] first time seeing msgType=' + msgType + ' raw=[' + Array.from(d).join(',') + ']');
+    }
 
     // INFO_RESPONSE (type 1) — 17 bytes: [1, rpcMaj, rpcMin, rpcBuild(2), fwMaj, fwMin,
     //   fwBuild(2), blMaj, blMin, blBuild(2), maxPktSize(2), productGroupDevice(2)]
@@ -167,6 +177,11 @@ function _makeNotifyHandler(dev) {
       const innerType = d[offset];
       offset   += 1;
       innerLen -= 1;
+
+      if (!dev._seenInnerTypes.has(innerType)) {
+        dev._seenInnerTypes.add(innerType);
+        console.log('[lego] first time seeing innerType=' + innerType + ' within DEVICE_NOTIFICATION');
+      }
 
       if (innerType === MOTOR_NOTIFICATION && offset + 12 <= d.length) {
         // MotorNotification wire format: <BBHhblb> = motorBitMask, motorState,
