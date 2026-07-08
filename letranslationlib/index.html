@@ -561,7 +561,7 @@ c.drive(dm)
         <p>Set the motor speed<pre><code>sm.set_speed(speed)</code></pre></p>
         <p>Run the motor<pre><code>sm.run()</code></pre></p>
         <p>Run the motor to an absolute position (0-359 degrees)<pre><code>sm.run_to(degrees)</code></pre></p>
-        <p>See a plot of the motor's position<pre><code>sm.plot()</code></pre></p>
+        <!-- <p>See a plot of the motor's position<pre><code>sm.plot()</code></pre></p> -->
         <p>Get the motor's current position<pre><code>sm.position()</code></pre></p>
 
     </div>
@@ -579,8 +579,8 @@ c.drive(dm)
         <p>Set the left motor speed <pre><code>dm.set_speed_left(speed)</code></pre></p>
         <p>Set the right motor speed<pre><code>dm.set_speed_right(speed)</code></pre></p>
         <p>Stop the motors<pre><code>dm.stop()</code></pre></p>
-        <p>See a plot of the left motor's position<pre><code>dm.plot_left()</code></pre></p>
-        <p>See a plot of the right motor's position<pre><code>dm.plot_right()</code></pre></p>
+        <!-- <p>See a plot of the left motor's position<pre><code>dm.plot_left()</code></pre></p> -->
+        <!-- <p>See a plot of the right motor's position<pre><code>dm.plot_right()</code></pre></p> -->
         <p>Get the left motor's current position<pre><code>dm.left_position()</code></pre></p>
         <p>Get the right motor's current position<pre><code>dm.right_position()</code></pre></p>
 
@@ -675,6 +675,7 @@ color = cs.detect_color()
   </div>
 
   <!-- Plot panels: sit outside tab-content-area so they persist across tab switches -->
+  <!--
   <div id="plot-column" style="display:flex;flex-direction:column;gap:10px;flex-shrink:0;">
     <div id="plot-panel-dm-left" class="plot-panel">
       <h2>Left Motor Position</h2>
@@ -689,6 +690,7 @@ color = cs.detect_color()
       <canvas id="plot-canvas-sm"></canvas>
     </div>
   </div>
+  -->
 
   <script>
     document.getElementById("defaultOpen").click();
@@ -710,8 +712,8 @@ color = cs.detect_color()
         { name: "set_speed_left",  sig: "(speed)" },
         { name: "set_speed_right", sig: "(speed)" },
         { name: "stop",            sig: "()" },
-        { name: "plot_left",       sig: "()" },
-        { name: "plot_right",      sig: "()" },
+        // { name: "plot_left",       sig: "()" },
+        // { name: "plot_right",      sig: "()" },
         { name: "left_position",   sig: "()" },
         { name: "right_position",  sig: "()" },
       ],
@@ -721,7 +723,7 @@ color = cs.detect_color()
         { name: "set_speed", sig: "(speed)" },
         { name: "run",       sig: "()" },
         { name: "run_to",    sig: "(degrees=90)" },
-        { name: "plot",      sig: "()" },
+        // { name: "plot",      sig: "()" },
         { name: "position",  sig: "()" },
       ],
       colorSensor: [
