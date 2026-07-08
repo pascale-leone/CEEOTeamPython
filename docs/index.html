@@ -1290,18 +1290,25 @@ class _AwaitTransformer(_ast.NodeTransformer):
             return new
         return node
     def _inject_yield(self, node):
-        # Unconditionally prepend '_check_stop(); await asyncio.sleep(0)' so every
-        # loop iteration — not just ones calling a whitelisted intrinsic — gives the
-        # browser's event loop (and the Stop button) a chance to run. Only
-        # node.body is touched, never orelse (for/while...else runs once, not
-        # per-iteration); break/continue/return work normally since these are just
-        # ordinary leading statements, not a wrapper.
+        # Unconditionally prepend '_check_stop(); await asyncio.sleep(0.01)' so
+        # every loop iteration — not just ones calling a whitelisted intrinsic —
+        # gives the browser's event loop (and the Stop button) a chance to run.
+        # Only node.body is touched, never orelse (for/while...else runs once,
+        # not per-iteration); break/continue/return work normally since these
+        # are just ordinary leading statements, not a wrapper.
+        #
+        # The sleep is a real 0.01s, not 0, so a loop with no wait() of its own
+        # (e.g. 'while cs.detect_color() != red: print(...)') is capped at ~100
+        # iterations/sec instead of spinning as fast as the JS event loop allows
+        # (tens of thousands/sec) — the streamed stdout output is also bounded
+        # (see the Run button handler) so a runaway print loop can't grow
+        # output.textContent without limit either.
         self.generic_visit(node)
         check = _ast.Expr(value=_ast.Call(
             func=_ast.Name(id='_check_stop', ctx=_ast.Load()), args=[], keywords=[]))
         sleep = _ast.Expr(value=_ast.Await(value=_ast.Call(
             func=_ast.Attribute(value=_ast.Name(id='asyncio', ctx=_ast.Load()), attr='sleep', ctx=_ast.Load()),
-            args=[_ast.Constant(value=0)], keywords=[])))
+            args=[_ast.Constant(value=0.01)], keywords=[])))
         _ast.copy_location(check, node)
         _ast.copy_location(sleep, node)
         node.body = [check, sleep] + node.body
@@ -1410,24 +1417,33 @@ def _auto_await(code):
       const myRunToken = ++activeRunToken;
 
       try {
-        pyodide.runPython(`import sys, io; _buf = io.StringIO(); sys.stdout = _buf`);
-        await pyodide.runPythonAsync(addMissingAwaits(code));
-        const raw = pyodide.runPython(`sys.stdout = sys.__stdout__; _buf.getvalue()`);
-        // Separate plot markers from display text
-        let displayOut = '';
-        for (const line of raw.split('\n')) {
+        let sawOutput = false;
+        // Stream stdout line-by-line as it's printed (pyodide.setStdout), rather
+        // than buffering into a Python object and reading it back only once the
+        // whole script finishes. Bound the displayed text the same way the old
+        // _BoundedStdout did — a 'while True: print(...)' with no wait() can
+        // print far faster than a human can read, and letting output.textContent
+        // grow without limit for a loop that never ends is its own slow leak.
+        pyodide.setStdout({ batched: (line) => {
+          if (myRunToken !== activeRunToken || window._pyStop) return;
           if (line.startsWith('\x00PLOT\x00')) {
             try { const d = JSON.parse(line.slice(6)); addPlotPoint(d.channel, d.x, d.y); } catch {}
-          } else {
-            displayOut += line + '\n';
+            return;
           }
-        }
+          let text = sawOutput ? output.textContent + '\n' + line : line;
+          if (text.length > 40000) {
+            text = '...(earlier output truncated)...\n' + text.slice(-20000);
+          }
+          output.textContent = text;
+          sawOutput = true;
+        }});
+        await pyodide.runPythonAsync(addMissingAwaits(code));
+        try { pyodide.runPython('sys.stdout.flush()'); } catch (_) {}
         if (myRunToken === activeRunToken) {
-          output.textContent = displayOut.trim() || 'Done';
+          if (!sawOutput) output.textContent = 'Done';
           output.className = 'success';
         }
       } catch (err) {
-        try { pyodide.runPython(`sys.stdout = sys.__stdout__`); } catch (_) {}
         if (myRunToken === activeRunToken) {
           if (err.message && err.message.includes('_Stopped')) {
             output.textContent = 'Stopped.';
@@ -1440,6 +1456,7 @@ def _auto_await(code):
           }
         }
       } finally {
+        pyodide.setStdout();
         if (myRunToken === activeRunToken) {
           runBtn.disabled = false;
         }
