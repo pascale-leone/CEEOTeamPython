@@ -136,6 +136,18 @@
 
     }
 
+    #doc-panel {
+        display: none;
+        flex-direction: column;
+        width: 380px;
+        flex-shrink: 0;
+        overflow-y: auto;
+        padding: 20px;
+        background: #282a36;
+        border-radius: 8px;
+        gap: 12px;
+    }
+
     #run:hover    { background: #70fc98; }
     #run:disabled { background: #44475a; color: #6272a4; cursor: not-allowed; }
 
@@ -501,12 +513,12 @@
 <body>
 
   <div class="tab-menu">
-    <button class="tab-button active" onclick="switchTab(event, 'tab1')" id="defaultOpen"><strong>Code</strong></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab2')"><strong>Single Motor Functions</strong><img class="button-img" id="sm" src="images/sm.png"></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab3')"><strong>Double Motor Functions</strong><img class="button-img" id="dm" src="images/dm.png"></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab4')"><strong>Controller Functions</strong><img class="button-img" id="c" src="images/c.png"></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab5')"><strong>Color Sensor Functions</strong><img class="button-img" id="cs" src="images/cs.png"></button>
-    <button class="tab-button" onclick="switchTab(event, 'tab6')"><strong>General Python tips!</strong></button>
+    <button class="tab-button active" onclick="showCode(event)" id="defaultOpen"><strong>Code</strong></button>
+    <button class="tab-button" onclick="showDocTab(event, 'tab2')"><strong>Single Motor Functions</strong><img class="button-img" id="sm" src="images/sm.png"></button>
+    <button class="tab-button" onclick="showDocTab(event, 'tab3')"><strong>Double Motor Functions</strong><img class="button-img" id="dm" src="images/dm.png"></button>
+    <button class="tab-button" onclick="showDocTab(event, 'tab4')"><strong>Controller Functions</strong><img class="button-img" id="c" src="images/c.png"></button>
+    <button class="tab-button" onclick="showDocTab(event, 'tab5')"><strong>Color Sensor Functions</strong><img class="button-img" id="cs" src="images/cs.png"></button>
+    <button class="tab-button" onclick="showDocTab(event, 'tab6')"><strong>General Python tips!</strong></button>
     <div class="connect-btn-grid">
       <button id="connect-btn-singleMotor" class="connect-btn" onclick="handleConnect('singleMotor')">○ Connect Single Motor</button>
       <button id="connect-btn-doubleMotor" class="connect-btn" onclick="handleConnect('doubleMotor')">○ Connect Double Motor</button>
@@ -567,7 +579,10 @@ c = controller()
 c.drive(dm)
         </code></pre>
     </div>
-    
+    </div>
+
+    <!-- Documentation panel: pops up alongside the code workspace -->
+    <div id="doc-panel">
     <div id="tab2" class="tabcontent">
         <h3>Single Motor Functions</h3>
         <p>Define a single motor (always do this first!) <pre><code>sm = singleMotor()</code></pre> </p>
@@ -818,7 +833,7 @@ color = cs.detect_color()
       }
     });
 
-    document.querySelectorAll(".tab-content-area pre").forEach(pre => {
+    document.querySelectorAll(".tab-content-area pre, #doc-panel pre").forEach(pre => {
       const codeEl = pre.querySelector("code");
       if (!codeEl) return;
       const btn = document.createElement("button");
@@ -1478,21 +1493,25 @@ def _auto_await(code):
       if (window.legoStopAll) legoStopAll().catch(() => {});
     });
 
-    function switchTab(event, tabname) {
-        document.querySelectorAll(".tabcontent").forEach(t => t.style.display = "none");
-        document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+    function showDocTab(event, tabname) {
+        document.querySelectorAll("#doc-panel .tabcontent").forEach(t => t.style.display = "none");
         document.getElementById(tabname).style.display = "block";
+        document.getElementById("doc-panel").style.display = "flex";
+        document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
         event.currentTarget.classList.add("active");
 
-        const tutorPanel = document.getElementById("tutor-side-panel");
-        if (tabname !== "tab1") {
-            tutorPanel.style.display = "none";
-            document.getElementById("open-tutor").style.display = "none";
-            document.getElementById("close-tutor").style.display = "none";
-        } else {
-            document.getElementById("open-tutor").style.display = "flex";
-            document.getElementById("close-tutor").style.display = "none";
-        }
+        document.getElementById("tutor-side-panel").style.display = "none";
+        document.getElementById("open-tutor").style.display = "none";
+        document.getElementById("close-tutor").style.display = "none";
+    }
+
+    function showCode(event) {
+        document.getElementById("doc-panel").style.display = "none";
+        document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+        event.currentTarget.classList.add("active");
+
+        document.getElementById("open-tutor").style.display = "flex";
+        document.getElementById("close-tutor").style.display = "none";
     }
 
     // ── Chat tab ──────────────────────────────────────────────
