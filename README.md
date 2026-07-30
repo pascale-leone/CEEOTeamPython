@@ -141,22 +141,29 @@ experiments/                 # ad-hoc hardware prototyping scripts (raw legoeduc
 
 ## Branches
 
+`main` is **not** frozen — it forked `web_app`/`claude_app_pascale` at `6314cb9` (2026-06-09) but has since kept moving independently, most notably gaining `pyscript_website/`, a genuine **PyScript** (pyscript.net) browser app built in parallel with — and currently unreconciled with — this branch's raw-Pyodide app. See `main`'s own README for full detail on `pyscript_website/`.
+
 ```
-main (frozen, 2026-06-09) ──┬── web_app (2026-06-26) ──┬── web_app_windows (2026-06-26)
-                             │                           └── web_app_pyodide (2026-07-08+) ← current
+                             ┌── web_app (2026-06-26) ──┬── web_app_windows (2026-06-26)
+main (6314cb9, 2026-06-09) ──┤                          └── web_app_pyodide (2026-07-08+) ← current
                              └── claude_app_pascale (2026-06-16)
+
+main itself kept moving after that fork point, through 2026-06-26,
+adding pyscript_website/ — a second, independent browser-app effort.
 
 chris_claude (independent, 2026-06-05 – 06-08, abandoned)
 ```
 
 | Branch | Status | What it is |
 |---|---|---|
-| `main` | Frozen since 2026-06-09 | The original translation library: single/double motor + sensor functions, a basic desktop server, and the very first stub of "web app" work. Every other branch is a strict descendant — nothing has been merged back. |
+| `main` | **Active, independent line** (through 2026-06-26) | The original translation library, plus `pyscript_website/` — a genuine PyScript browser app (real `pyscript.toml`, `<script type="py">`, Plotly-based live plotting) built independently of this branch's Pyodide app. Since `web_app`/`claude_app_pascale` forked from an earlier point on `main`, they no longer contain everything currently on `main`. |
 | `chris_claude` | Abandoned (last commit 2026-06-08) | An early, independent rewrite of the library by a different contributor, introducing a differently-shaped API (`Motor("3683")`, `Robot("3683")` in `lego_easy.py`). Forked before `main`'s current tip existed; never merged. |
-| `web_app` | Superseded (last commit 2026-06-26) | Turns the library into a native **Electron desktop app**: adds a rewritten `index.html`, a PyInstaller-bundled Flask server (`server.py`/`server.spec`), a reorganized `letranslationlib/python/` package, and the Render-hosted `proxy/` for the chatbot's API key. Fully contains `main`. |
+| `web_app` | Superseded (last commit 2026-06-26) | Turns the library into a native **Electron desktop app**: adds a rewritten `index.html`, a PyInstaller-bundled Flask server (`server.py`/`server.spec`), a reorganized `letranslationlib/python/` package, and the Render-hosted `proxy/` for the chatbot's API key. Forked from `main` at `6314cb9`, before `pyscript_website/` existed. |
 | `web_app_windows` | Dormant side-branch (last commit 2026-06-26, same day as its fork) | A narrow follow-on to `web_app` fixing **Windows-specific PyInstaller packaging** (`hiddenimports` for `requests`/`certifi`/etc.), installer config, and a Render proxy "warm-up" ping to hide cold-start latency. Nothing builds on top of it. |
 | `web_app_pyodide` | **Active — current branch** (through 2026-07-08 plus local work) | Converts the desktop app into a **fully browser-based app**: drops Electron/PyInstaller in favor of Pyodide (Python-in-WASM) + Web Bluetooth (`lego_ble.js`), adds the `docs/` GitHub Pages mirror, and removes the native shell. Most of its history since is bug-fixing/polish on the in-browser runtime (runaway-loop crashes, Stop button state, motor position readbacks, multi-device BLE, hiding the broken plot UI). |
-| `claude_app_pascale` | Superseded (last commit 2026-06-16) | An early chatbot-tutor prototype for the desktop app that called the Anthropic SDK **directly** from a local server using a `.env`-stored API key (no proxy). Replaced by the Render-proxy design that shipped in `web_app` onward. Fully contains `main`. |
+| `claude_app_pascale` | Superseded (last commit 2026-06-16) | An early chatbot-tutor prototype for the desktop app that called the Anthropic SDK **directly** from a local server using a `.env`-stored API key (no proxy). Replaced by the Render-proxy design that shipped in `web_app` onward. Forked from `main` at `6314cb9`, before `pyscript_website/` existed. |
+
+**Net effect:** there are currently two independent, unreconciled prototypes of "run the simplified library in-browser over Web Bluetooth" — this branch's hand-rolled Pyodide app, and `main`'s `pyscript_website/` (real PyScript). Worth comparing and consolidating before choosing one to ship.
 
 ## Known issues / repo hygiene
 
